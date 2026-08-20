@@ -1,29 +1,45 @@
 package com.photo.starsnap.designsystem
 
-import androidx.compose.ui.graphics.Color
+/**
+ * Backward-compatible aliases for screens that still use the original token names.
+ * New UI should use [StarSnapColor] directly.
+ */
+object CustomColor {
+    val ink = StarSnapColor.text
+    val inkSoft = StarSnapColor.textSoft
+    val sub = StarSnapColor.textSubtle
+    val muted = StarSnapColor.textMuted
+    val line = StarSnapColor.border
+    val placeholder = StarSnapColor.surfaceSubtle
+    val brand = StarSnapColor.brand
+    val brandSoft = StarSnapColor.brandSoft
+    val danger = StarSnapColor.danger
 
-object CustomColor{
-    val yellow_50 = Color(0xFFFFFBD1)
-    val yellow_100 = Color(0xFFFEF7AF)
-    val yellow_200 = Color(0xFFF8EE90)
-    val yellow_300 = Color(0xFFFFEA80)
-    val yellow_400 = Color(0xFFFFE55B)
-    val yellow_500 = Color(0xFFFFDD4F)
-    val yellow_600 = Color(0xFFF7D548)
-    val yellow_700 = Color(0xFFDCBB31)
-    val yellow_800 = Color(0xFFC7A61F)
-    val yellow_900 = Color(0xFF8E7718)
+    val yellow_50 = StarSnapColor.yellow50
+    val yellow_100 = StarSnapColor.yellow100
+    val yellow_200 = StarSnapColor.yellow200
+    val yellow_300 = StarSnapColor.yellow300
+    val yellow_400 = StarSnapColor.yellow400
+    val yellow_500 = StarSnapColor.yellow500
+    val yellow_600 = StarSnapColor.yellow600
+    val yellow_700 = StarSnapColor.yellow700
+    val yellow_800 = StarSnapColor.yellow800
+    val yellow_900 = StarSnapColor.yellow800
 
-    val light_black = Color(0xFF1A1E27)
-    val title = Color(0xFF353C49)
-    val sub_title = Color(0xFF505866)
-    val gray = Color(0xFF969FA8)
-    val light_gray = Color(0xFFB1B8C0)
-    val button = Color(0xFFDBDEE2)
-    val container = Color(0xFFF2F3F4)
+    val light_black = StarSnapColor.text
+    val title = StarSnapColor.textSoft
+    val sub_title = StarSnapColor.textSubtle
+    val gray = StarSnapColor.textMuted
+    val light_gray = StarSnapColor.borderStrong
+    val button = StarSnapColor.borderStrong
+    val container = StarSnapColor.surfaceSubtle
 
-    val error = Color(0xFFFF4040)
-    val success = Color(0xFF00C781)
+    val error = StarSnapColor.danger
+    val success = StarSnapColor.success
 
+    val background = StarSnapColor.canvas
+    val surface = StarSnapColor.surface
+    val border = StarSnapColor.border
+    val primary = StarSnapColor.brand
+    val primarySoft = StarSnapColor.brandSoft
 }
-

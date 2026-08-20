@@ -1,119 +1,43 @@
 package com.photo.starsnap.designsystem.text
 
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
-import com.photo.starsnap.designsystem.text.TextFont.pretendard
-import com.photo.starsnap.designsystem.CustomColor
+import com.photo.starsnap.designsystem.StarSnapColor
 
+/**
+ * Backward-compatible aliases for the existing screen API.
+ * New UI should use [StarSnapTypography] and [StarSnapFontSize].
+ */
 object CustomTextStyle {
-    val TitleLarge = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        color = CustomColor.light_black
-    )
-    val TitleMedium = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        color = CustomColor.light_black
-    )
-    val TitleSmall = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
-        color = CustomColor.light_black
-    )
+    val TitleLarge = StarSnapTypography.heading
+    val TitleMedium = StarSnapTypography.body.copy(fontWeight = FontWeight.SemiBold)
+    val TitleSmall = StarSnapTypography.label.copy(fontWeight = FontWeight.SemiBold)
 
-    val title1 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Bold,
-        fontSize = 14.sp,
-        color = CustomColor.light_black
-    )
-    val title2 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        color = CustomColor.light_black
-    )
-    val title3 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        color = CustomColor.light_black
-    )
-    val title4 = TextStyle(
-        fontFamily = pretendard,
+    val title1 = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
+    val title2 = StarSnapTypography.label
+    val title3 = StarSnapTypography.caption
+    val title4 = StarSnapTypography.caption.copy(
         fontWeight = FontWeight.Normal,
-        fontSize = 11.sp,
-        color = CustomColor.gray
+        color = StarSnapColor.textMuted,
     )
-    val title5 = TextStyle(
-        fontFamily = pretendard,
+    val title5 = StarSnapTypography.label.copy(fontSize = StarSnapFontSize.label)
+    val title6 = StarSnapTypography.micro.copy(color = StarSnapColor.textSubtle)
+    val title7 = StarSnapTypography.micro.copy(color = StarSnapColor.textSoft)
+    val title8 = StarSnapTypography.micro.copy(fontWeight = FontWeight.SemiBold)
+    val title9 = StarSnapTypography.body.copy(
         fontWeight = FontWeight.Medium,
-        fontSize = 13.sp,
-        color = CustomColor.light_black
-    )
-    val title6 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Medium,
-        fontSize = 9.sp,
-        color = CustomColor.sub_title
-    )
-    val title7 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Medium,
-        fontSize = 9.sp,
-        color = CustomColor.title
-    )
-    val title8 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 10.sp,
-        color = CustomColor.light_black
+        color = StarSnapColor.textSubtle,
     )
 
-    val title9 = TextStyle(
-        fontFamily = pretendard,
+    val body1 = StarSnapTypography.bodySmall.copy(fontWeight = FontWeight.Medium)
+    val hint2 = StarSnapTypography.label.copy(
+        fontSize = StarSnapFontSize.label,
+        color = StarSnapColor.textMuted,
+    )
+    val hint1 = StarSnapTypography.bodySmall.copy(
         fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        color = CustomColor.sub_title
+        color = StarSnapColor.textMuted,
     )
 
-    val body1 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Medium,
-        fontSize = 15.sp,
-        color = CustomColor.light_black
-    )
-
-    val hint2 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Medium,
-        fontSize = 13.sp,
-        color = CustomColor.gray
-    )
-
-    val hint1 = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.Medium,
-        fontSize = 15.sp,
-        color = CustomColor.gray
-    )
-
-    val TopBarTitle = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
-        color = CustomColor.light_black
-    )
-
-    val SignupTitle = TextStyle(
-        fontFamily = pretendard,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 30.sp,
-        color = CustomColor.light_black
-    )
+    val TopBarTitle = StarSnapTypography.title
+    val SignupTitle = StarSnapTypography.displayLarge
 }
