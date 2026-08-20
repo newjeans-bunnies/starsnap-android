@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.photo.starsnap.designsystem.CustomColor.container
 import com.photo.starsnap.designsystem.CustomColor.button
+import com.photo.starsnap.designsystem.text.StarSnapFontSize
 import com.photo.starsnap.designsystem.text.CustomTextStyle.title2
 import com.photo.starsnap.main.utils.EditTextType
 import com.photo.starsnap.main.utils.getKeyboardType
@@ -60,7 +61,8 @@ fun BaseEditText(
         },
         modifier = Modifier
             .height(60.dp)
-            .background(container, shape = RoundedCornerShape(size = 8.dp)),
+            .background(container, shape = RoundedCornerShape(size = 8.dp))
+            .border(width = 1.dp, color = button, shape = RoundedCornerShape(size = 8.dp)),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         visualTransformation = visualTransformation,
         singleLine = true,
@@ -154,7 +156,7 @@ fun VerifyCodeEditText(code: String) {
             .width(60.dp)
             .border(0.8.dp, button, shape = RoundedCornerShape(size = 8.dp))
     ) {
-        Text(text = code, fontSize = 30.sp)
+        Text(text = code, fontSize = StarSnapFontSize.threeXl)
     }
 }
 

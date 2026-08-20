@@ -8,7 +8,9 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +31,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -43,6 +48,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.photo.starsnap.designsystem.CustomColor
 import com.photo.starsnap.designsystem.R
+import com.photo.starsnap.designsystem.StarSnapColor
+import com.photo.starsnap.designsystem.text.CustomTextStyle.SignupTitle
 import com.photo.starsnap.designsystem.text.CustomTextStyle.title4
 import com.photo.starsnap.designsystem.text.TextFont.pretendard
 import com.photo.starsnap.main.ui.component.AppIcon
@@ -77,70 +84,97 @@ fun LoginScreen(
             // Once the account has been added, do sign in again.
             doGoogleSignIn(context, coroutineScope, loginViewModel, null)
         }
+    // 로그인 버튼 활성화 여부
     var isClickable by remember { mutableStateOf(false) }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+
+    // 로그인 정보
+    var username by remember { mutableStateOf("") } // 아이디
+    var password by remember { mutableStateOf("") } // 비밀번호
+
     isClickable = username.isNotBlank() && password.isNotBlank()
 
-    val loginState by loginViewModel.loginState.observeAsState()
+    val loginState by loginViewModel.loginState.observeAsState() // 로그인
 
     LaunchedEffect(loginState) {
-        if (loginState == LoginState.Success) {
-            moveMainNavigation()
+
+        when (loginState) {
+            LoginState.Idle -> {
+                // 로그인 시도 전
+            }
+            LoginState.Loading -> {
+                // 로그인 시도 중
+            }
+            LoginState.Success -> {
+                // 로그인 성공
+                moveMainNavigation()
+            }
+            LoginState.Failure -> {
+                // 로그인 실패
+            }
+
+            else -> {}
         }
+
     }
 
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 30.dp),
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        StarSnapColor.infoSoft,
+                        StarSnapColor.successSoft,
+                    )
+                )
+            )
+            .padding(20.dp)
     ) {
-        Spacer(modifier = Modifier.height(70.dp))
-        Text(
+        Column(
             modifier = Modifier
-                .padding(vertical = 70.dp)
-                .align(Alignment.Start),
-            text = "StarSnap에서 빛나는\n순간을 공유하세요.",
-            style = TextStyle(
-                fontFamily = pretendard,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 30.sp,
-                color = CustomColor.light_black
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .background(color = StarSnapColor.surface, shape = RoundedCornerShape(16.dp))
+                .padding(horizontal = 24.dp, vertical = 30.dp),
+        ) {
+            Text(
+                modifier = Modifier.align(Alignment.Start),
+                text = "StarSnap에서 빛나는\n순간을 공유하세요.",
+                style = SignupTitle,
             )
-        )
+            Spacer(Modifier.height(28.dp))
 
-        EditText(stringResource(R.string.login_edit_text_username_hint)) { username = it }
-        Spacer(Modifier.height(15.dp))
-        PasswordEditText(hint = stringResource(R.string.login_edit_text_password_hint)) {
-            password = it
-        }
-        Spacer(Modifier.height(20.dp))
-        MainButton(
-            { loginViewModel.login(username, password) },
-            isClickable,
-            stringResource(R.string.login)
-        )
-        Spacer(Modifier.height(24.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            TextButton(
-                text = stringResource(R.string.login_find_username_button_text),
-                textStyle = title4,
-                onClick = { })
-            Spacer(Modifier.width(30.dp))
-            TextButton(
-                text = stringResource(R.string.login_find_password_button_text),
-                textStyle = title4,
-                onClick = { })
-            Spacer(Modifier.width(30.dp))
-            TextButton(
-                text = stringResource(R.string.signup),
-                textStyle = title4,
-                onClick = moveSignupNavigation
+            EditText(stringResource(R.string.login_edit_text_username_hint)) { username = it }
+            Spacer(Modifier.height(15.dp))
+            PasswordEditText(hint = stringResource(R.string.login_edit_text_password_hint)) {
+                password = it
+            }
+            Spacer(Modifier.height(20.dp))
+            MainButton(
+                { loginViewModel.login(username, password) },
+                isClickable,
+                stringResource(R.string.login)
             )
-        }
-        Spacer(Modifier.weight(1F))
-        Column {
+            Spacer(Modifier.height(24.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                TextButton(
+                    text = stringResource(R.string.login_find_username_button_text),
+                    textStyle = title4,
+                    onClick = { })
+                Spacer(Modifier.width(18.dp))
+                TextButton(
+                    text = stringResource(R.string.login_find_password_button_text),
+                    textStyle = title4,
+                    onClick = { })
+                Spacer(Modifier.width(18.dp))
+                TextButton(
+                    text = stringResource(R.string.signup),
+                    textStyle = title4,
+                    onClick = moveSignupNavigation
+                )
+            }
+            Spacer(Modifier.height(26.dp))
             GoogleLoginButton(onClick = {
                 doGoogleSignIn(
                     context,
@@ -151,7 +185,6 @@ fun LoginScreen(
             })
             Spacer(Modifier.height(10.dp))
             AppleLoginButton {}
-            Spacer(Modifier.height(30.dp))
         }
     }
 

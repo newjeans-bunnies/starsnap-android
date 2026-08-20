@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.photo.starsnap.designsystem.CustomColor
+import com.photo.starsnap.designsystem.text.CustomTextStyle.title8
 import com.photo.starsnap.designsystem.text.TextFont.pretendard
 import com.photo.starsnap.network.snap.dto.StarDto
 
@@ -30,12 +31,8 @@ fun SmallStar(starDto: StarDto) {
         RoundProfileImage(imageKey = null, modifier = Modifier.size(15.dp))
         Spacer(modifier = Modifier.height(5.dp))
         Text(
-            text = starDto.nickname, style = TextStyle(
-                color = CustomColor.light_black,
-                fontSize = 10.sp,
-                fontFamily = pretendard,
-                fontWeight = FontWeight.SemiBold
-            )
+            text = starDto.nickname,
+            style = title8.copy(color = CustomColor.light_black),
         )
     }
 }

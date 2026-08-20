@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -47,6 +48,7 @@ import androidx.navigation.compose.rememberNavController
 import com.photo.starsnap.designsystem.CustomColor
 import com.photo.starsnap.designsystem.CustomColor.container
 import com.photo.starsnap.designsystem.R
+import com.photo.starsnap.designsystem.text.CustomTextStyle.TitleSmall
 import com.photo.starsnap.designsystem.text.CustomTextStyle.title9
 import com.photo.starsnap.main.ui.component.TextEditHint
 import com.photo.starsnap.main.ui.screen.main.star_hub.StarGroupListScreen
@@ -79,6 +81,7 @@ fun StarHubRoute(
 
     Scaffold(
         containerColor = Color.White,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             SearchTopBar(state) {
                 if(state)
@@ -211,14 +214,7 @@ fun SelectText(changeState: (Boolean) -> Unit) {
             Text(
                 text = "Star",
                 textAlign = TextAlign.Center,
-                fontSize = 14.sp,
-                fontFamily = FontFamily(
-                    Font(
-                        R.font.pretendard_semi_bold,
-                        FontWeight.SemiBold,
-                        FontStyle.Normal
-                    )
-                ),
+                style = TitleSmall,
                 color = if (!tempState) CustomColor.light_black else CustomColor.light_gray
             )
         }
@@ -232,14 +228,7 @@ fun SelectText(changeState: (Boolean) -> Unit) {
             Text(
                 text = "StarGroup",
                 textAlign = TextAlign.Center,
-                fontSize = 14.sp,
-                fontFamily = FontFamily(
-                    Font(
-                        R.font.pretendard_semi_bold,
-                        FontWeight.SemiBold,
-                        FontStyle.Normal
-                    )
-                ),
+                style = TitleSmall,
                 color = if (tempState) CustomColor.light_black else CustomColor.light_gray
             )
         }
