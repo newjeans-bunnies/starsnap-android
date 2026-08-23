@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">starsnap-android</string>
+    <string name="fcm_default_channel_id" translatable="false">starsnap_social</string>
+    <string name="fcm_social_channel_name">소셜 알림</string>
+    <string name="fcm_social_channel_description">친구 요청과 수락 소식을 알려드려요.</string>
 </resources>
