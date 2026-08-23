@@ -31,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.Font
@@ -48,6 +47,7 @@ import androidx.navigation.compose.rememberNavController
 import com.photo.starsnap.designsystem.CustomColor
 import com.photo.starsnap.designsystem.CustomColor.container
 import com.photo.starsnap.designsystem.R
+import com.photo.starsnap.designsystem.StarSnapColor
 import com.photo.starsnap.designsystem.text.CustomTextStyle.TitleSmall
 import com.photo.starsnap.designsystem.text.CustomTextStyle.title9
 import com.photo.starsnap.main.ui.component.TextEditHint
@@ -80,7 +80,7 @@ fun StarHubRoute(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = StarSnapColor.canvas,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             SearchTopBar(state) {
@@ -140,7 +140,7 @@ fun SearchTopBar(state: Boolean = false, searchText: (String) -> Unit) {
             .padding(horizontal = 22.dp)
             .height(65.dp)
             .fillMaxWidth()
-            .background(color = Color.White)
+            .background(color = StarSnapColor.surface)
 
     ) {
         Spacer(modifier = Modifier.height(18.dp))
@@ -215,7 +215,7 @@ fun SelectText(changeState: (Boolean) -> Unit) {
                 text = "Star",
                 textAlign = TextAlign.Center,
                 style = TitleSmall,
-                color = if (!tempState) CustomColor.light_black else CustomColor.light_gray
+                color = if (!tempState) CustomColor.light_black else CustomColor.gray
             )
         }
         Box(
@@ -229,7 +229,7 @@ fun SelectText(changeState: (Boolean) -> Unit) {
                 text = "StarGroup",
                 textAlign = TextAlign.Center,
                 style = TitleSmall,
-                color = if (tempState) CustomColor.light_black else CustomColor.light_gray
+                color = if (tempState) CustomColor.light_black else CustomColor.gray
             )
         }
     }

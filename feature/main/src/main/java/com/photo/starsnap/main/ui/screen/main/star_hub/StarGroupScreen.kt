@@ -38,16 +38,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.photo.starsnap.designsystem.CustomColor
 import com.photo.starsnap.designsystem.StarSnapColor
-import com.photo.starsnap.designsystem.text.CustomTextStyle.SignupTitle
-import com.photo.starsnap.designsystem.text.CustomTextStyle.TitleMedium
-import com.photo.starsnap.designsystem.text.CustomTextStyle.title5
-import com.photo.starsnap.designsystem.text.CustomTextStyle.title7
+import com.photo.starsnap.designsystem.text.StarSnapTypography
 import com.photo.starsnap.main.ui.component.TopAppBar
 import com.photo.starsnap.main.ui.component.skeleton.SnapImageSkeleton
 import com.photo.starsnap.main.utils.NavigationRoute.SNAP
@@ -78,7 +74,7 @@ fun StarGroupScreen(
     }
 
     Scaffold(
-        containerColor = CustomColor.background,
+        containerColor = StarSnapColor.canvas,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -101,20 +97,30 @@ fun StarGroupScreen(
                 StarGroupBanner(starGroup)
             }
 
-            if (detail.members.isNotEmpty()) {
-                item(span = StaggeredGridItemSpan.FullLine) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                    ) {
-                        Text("멤버", style = TitleMedium.copy(color = CustomColor.light_black))
-                        Spacer(modifier = Modifier.height(12.dp))
+            item(span = StaggeredGridItemSpan.FullLine) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                ) {
+                    Text(
+                        text = "멤버",
+                        style = StarSnapTypography.title.copy(fontWeight = FontWeight.Bold),
+                        color = StarSnapColor.text
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (detail.members.isEmpty()) {
+                        Text(
+                            text = "멤버 정보가 없습니다.",
+                            style = StarSnapTypography.label,
+                            color = StarSnapColor.textSubtle
+                        )
+                    } else {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.spacedBy(28.dp)
                         ) {
                             detail.members.forEach { member ->
                                 Column(
@@ -126,9 +132,10 @@ fun StarGroupScreen(
                                 ) {
                                     GlideImage(
                                         modifier = Modifier
-                                            .size(56.dp)
+                                            .size(64.dp)
                                             .clip(CircleShape)
-                                            .background(CustomColor.placeholder, CircleShape),
+                                            .border(2.dp, StarSnapColor.border, CircleShape)
+                                            .background(StarSnapColor.surfaceSubtle, CircleShape),
                                         imageModel = { getImageUrl(member.imageKey) },
                                         imageOptions = ImageOptions(
                                             contentScale = ContentScale.Crop,
@@ -138,12 +145,14 @@ fun StarGroupScreen(
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = member.name,
-                                        style = title7.copy(color = CustomColor.light_black)
+                                        style = StarSnapTypography.label,
+                                        color = StarSnapColor.text
                                     )
                                     if (!member.nickname.isNullOrBlank()) {
                                         Text(
                                             text = member.nickname ?: "",
-                                            style = title7.copy(color = CustomColor.sub_title)
+                                            style = StarSnapTypography.caption,
+                                            color = StarSnapColor.textSubtle
                                         )
                                     }
                                 }
@@ -164,7 +173,7 @@ fun StarGroupScreen(
                         StarGroupTab("정보", tab == "정보") { tab = "정보" }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(thickness = 1.dp, color = CustomColor.line)
+                    HorizontalDivider(thickness = 1.dp, color = StarSnapColor.border)
                 }
             }
 
@@ -176,8 +185,9 @@ fun StarGroupScreen(
                 } else if (detail.snaps.isEmpty()) {
                     item(span = StaggeredGridItemSpan.FullLine) {
                         Text(
-                            text = "이 그룹과 연결된 스냅이 없습니다.",
-                            style = title5.copy(color = CustomColor.sub_title),
+                            text = "이 스타그룹에 연결된 스냅이 없습니다.",
+                            style = StarSnapTypography.label,
+                            color = StarSnapColor.textSubtle,
                             modifier = Modifier.padding(top = 16.dp)
                         )
                     }
@@ -189,7 +199,7 @@ fun StarGroupScreen(
                                 .fillMaxWidth()
                                 .aspectRatio(snap.snapData.imageAspectRatio ?: 1f)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(CustomColor.placeholder)
+                                .background(StarSnapColor.surfaceSubtle)
                                 .clickableSingle {
                                     snapViewModel.selectSnap(snap)
                                     mainNavController.navigate(SNAP)
@@ -211,7 +221,8 @@ fun StarGroupScreen(
                     Text(
                         text = starGroup?.explanation?.ifBlank { "등록된 스타그룹 소개가 없습니다." }
                             ?: "등록된 스타그룹 소개가 없습니다.",
-                        style = title5.copy(color = CustomColor.sub_title),
+                        style = StarSnapTypography.bodySmall,
+                        color = StarSnapColor.textSubtle,
                         modifier = Modifier.padding(top = 16.dp)
                     )
                 }
@@ -231,31 +242,33 @@ private fun StarGroupBanner(starGroup: StarGroupResponseDto?) {
                     listOf(StarSnapColor.textMuted, StarSnapColor.textSubtle)
                 )
             )
-            .padding(22.dp)
+            .padding(24.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             GlideImage(
                 modifier = Modifier
-                    .size(96.dp)
+                    .size(112.dp)
                     .clip(CircleShape)
-                    .border(4.dp, Color.White.copy(alpha = 0.7f), CircleShape)
-                    .background(Color.White.copy(alpha = 0.3f), CircleShape),
+                    .border(4.dp, StarSnapColor.surface.copy(alpha = 0.7f), CircleShape)
+                    .background(StarSnapColor.surface.copy(alpha = 0.3f), CircleShape),
                 imageModel = { getImageUrl(starGroup?.imageKey) },
                 imageOptions = ImageOptions(
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center
                 )
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(20.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = starGroup?.name ?: "",
-                    style = SignupTitle.copy(color = Color.White)
+                    style = StarSnapTypography.displayLarge,
+                    color = StarSnapColor.surface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "데뷔 ${starGroup?.debutDate?.ifBlank { "-" } ?: "-"}",
-                    style = title7.copy(color = Color.White.copy(alpha = 0.9f))
+                    style = StarSnapTypography.label,
+                    color = StarSnapColor.surface.copy(alpha = 0.9f)
                 )
             }
         }
@@ -271,22 +284,30 @@ private fun StarGroupBanner(starGroup: StarGroupResponseDto?) {
                     .weight(1f)
                     .height(44.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(CustomColor.brand)
+                    .background(StarSnapColor.brand)
                     .clickableSingle { /* fan toggle: 추후 서버 연동 */ },
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "팬 추가", style = title5.copy(color = CustomColor.light_black))
+                Text(
+                    text = "팬 추가",
+                    style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold),
+                    color = StarSnapColor.onBrand
+                )
             }
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White)
+                    .background(StarSnapColor.surface)
                     .clickableSingle { /* share */ },
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "공유", style = title5.copy(color = CustomColor.light_black))
+                Text(
+                    text = "공유",
+                    style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold),
+                    color = StarSnapColor.text
+                )
             }
         }
     }
@@ -294,22 +315,27 @@ private fun StarGroupBanner(starGroup: StarGroupResponseDto?) {
 
 @Composable
 private fun StarGroupTab(label: String, selected: Boolean, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickableSingle { onClick() }
+    Box(
+        modifier = Modifier
+            .width(64.dp)
+            .height(44.dp)
+            .clickableSingle(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            style = title5.copy(
-                color = if (selected) CustomColor.light_black else CustomColor.muted
-            )
+            style = StarSnapTypography.label.copy(fontWeight = FontWeight.SemiBold),
+            color = if (selected) StarSnapColor.text else StarSnapColor.textMuted
         )
-        Spacer(modifier = Modifier.height(6.dp))
         Box(
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .height(2.dp)
                 .width(28.dp)
-                .background(if (selected) CustomColor.light_black else Color.Transparent)
+                .background(
+                    if (selected) StarSnapColor.text
+                    else StarSnapColor.surface.copy(alpha = 0f)
+                )
         )
     }
 }

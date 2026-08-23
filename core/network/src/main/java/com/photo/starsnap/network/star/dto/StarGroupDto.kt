@@ -20,7 +20,7 @@ data class UpdateStarGroupRequestDto(
 
 data class StarGroupResponseDto(
     val name: String,
-    val debutDate: String,
+    val debutDate: String?,
     val explanation: String?,
     val starGroupType: StarGroupType,
     val id: String,

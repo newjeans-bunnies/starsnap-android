@@ -16,11 +16,11 @@ data class StarResponseDto(
     val id: String,
     val name: String,
     val gender: GenderType,
-    val birthday: String,
-    val nickname: String,
+    val birthday: String?,
+    val nickname: String?,
     val explanation: String?,
     val imageKey: String?,
-    val createdAt: LocalDateTime?,
+    val createdAt: String?,
     val starGroup: StarGroupResponseDto?
 )
 
