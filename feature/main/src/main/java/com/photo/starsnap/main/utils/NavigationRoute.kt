@@ -23,6 +23,10 @@ object NavigationRoute {
     // snap screen
     const val SNAP = "snap"
 
+    // message screen
+    const val MESSAGE = "message" // 채팅방 목록
+    const val MESSAGE_CHAT = "message_chat" // 대화 화면
+
     // setting screen
     const val PROFILE = "profile" // 프로필
     const val FIX_PROFILE = "fix_profile" // 프로필 수정

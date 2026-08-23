@@ -4,6 +4,8 @@ import com.photo.starsnap.model.photo.PhotoRepository
 import com.photo.starsnap.model.photo.PhotoRepositoryImpl
 import com.photo.starsnap.network.auth.AuthApiRepositoryImpl
 import com.photo.starsnap.network.auth.AuthRepository
+import com.photo.starsnap.network.message.MessageApiRepositoryImpl
+import com.photo.starsnap.network.message.MessageRepository
 import com.photo.starsnap.network.report.ReportApiRepositoryImpl
 import com.photo.starsnap.network.report.ReportRepository
 import com.photo.starsnap.network.snap.SnapApiRepositoryImpl
@@ -38,6 +40,11 @@ class RepositoryModule {
     @Singleton
     fun provideUserRepository(userApiRepositoryImpl: UserApiRepositoryImpl): UserRepository =
         userApiRepositoryImpl
+
+    @Provides
+    @Singleton
+    fun provideMessageRepository(messageApiRepositoryImpl: MessageApiRepositoryImpl): MessageRepository =
+        messageApiRepositoryImpl
 
     @Provides
     @Singleton

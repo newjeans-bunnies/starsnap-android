@@ -1,6 +1,7 @@
 package com.photo.starsnap.main.ui.screen.main.message
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +45,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,6 +64,7 @@ import com.photo.starsnap.main.ui.component.TopAppBar
 import com.photo.starsnap.main.utils.constant.Constant
 import com.photo.starsnap.main.viewmodel.main.ChatUiMessage
 import com.photo.starsnap.main.viewmodel.main.MessageViewModel
+import com.photo.starsnap.main.viewmodel.main.nextRestorableDraft
 import com.skydoves.landscapist.glide.GlideImage
 import kotlinx.coroutines.flow.drop
 
@@ -71,6 +78,9 @@ fun MessageChatScreen(
     val hasMoreMessages by messageViewModel.hasMoreMessages.collectAsStateWithLifecycle()
     val error by messageViewModel.error.collectAsStateWithLifecycle()
     val typingSenderUserId by messageViewModel.typingSenderUserId.collectAsStateWithLifecycle()
+    val sendCooldownRemainingSeconds by
+        messageViewModel.sendCooldownRemainingSeconds.collectAsStateWithLifecycle()
+    val draftRestoreEvents by messageViewModel.draftRestoreEvents.collectAsStateWithLifecycle()
     val isPartnerTyping = typingSenderUserId != null
     val roomName = selectedRoom?.let(messageViewModel::roomDisplayName) ?: "메시지"
     val roomProfileImageUrl = selectedRoom
@@ -86,6 +96,24 @@ fun MessageChatScreen(
     var deleteMessage by remember { mutableStateOf<ChatUiMessage?>(null) }
     val listState = rememberLazyListState()
     val currentHasMoreMessages by rememberUpdatedState(hasMoreMessages)
+    val draftRestoreEvent = selectedRoom?.roomId?.let { roomId ->
+        draftRestoreEvents.nextRestorableDraft(roomId, input.text)
+    }
+
+    androidx.compose.runtime.LaunchedEffect(
+        draftRestoreEvent?.id,
+        selectedRoom?.roomId,
+        input.text,
+    ) {
+        val event = draftRestoreEvent ?: return@LaunchedEffect
+        if (event.roomId == selectedRoom?.roomId) {
+            input = TextFieldValue(
+                text = event.content,
+                selection = TextRange(event.content.length),
+            )
+            messageViewModel.acknowledgeDraftRestored(event.id)
+        }
+    }
 
     androidx.compose.runtime.LaunchedEffect(messages.lastOrNull()?.id) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
@@ -108,7 +136,7 @@ fun MessageChatScreen(
     }
 
     Scaffold(
-        containerColor = CustomColor.surface,
+        containerColor = StarSnapColor.canvas,
         topBar = {
             TopAppBar(
                 title = roomName,
@@ -196,8 +224,24 @@ fun MessageChatScreen(
                 )
             }
 
+            if (sendCooldownRemainingSeconds > 0) {
+                Text(
+                    text = "${sendCooldownRemainingSeconds}초 후 다시 보낼 수 있어요.",
+                    style = CustomTextStyle.title4.copy(color = StarSnapColor.textMuted),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(StarSnapColor.surface)
+                        .semantics {
+                            liveRegion = LiveRegionMode.Polite
+                            stateDescription = "${sendCooldownRemainingSeconds}초 남음"
+                        }
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
+
             ChatInputBar(
                 value = input,
+                cooldownRemainingSeconds = sendCooldownRemainingSeconds,
                 onValueChange = {
                     input = it
                     messageViewModel.onDraftChanged(it.text)
@@ -308,8 +352,12 @@ private fun MessageBubble(
     onLongClick: () -> Unit,
 ) {
     val horizontalAlignment = if (message.mine) Alignment.End else Alignment.Start
-    val bubbleColor = if (message.mine) CustomColor.primary else CustomColor.container
-    val textColor = if (message.status == "DELETED") CustomColor.gray else CustomColor.light_black
+    val bubbleColor = if (message.mine) StarSnapColor.brand else StarSnapColor.surface
+    val textColor = when {
+        message.status == "DELETED" -> StarSnapColor.textMuted
+        message.mine -> StarSnapColor.onBrand
+        else -> StarSnapColor.text
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -383,7 +431,8 @@ private fun PartnerTypingBubble() {
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
-                .background(CustomColor.container)
+                .background(StarSnapColor.surface)
+                .border(1.dp, StarSnapColor.border, RoundedCornerShape(16.dp))
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -405,14 +454,17 @@ private fun PartnerTypingBubble() {
 @Composable
 private fun ChatInputBar(
     value: TextFieldValue,
+    cooldownRemainingSeconds: Int,
     onValueChange: (TextFieldValue) -> Unit,
     onFocusChanged: (Boolean) -> Unit,
     onSend: () -> Unit
 ) {
+    val canSend = value.text.isNotBlank() && cooldownRemainingSeconds == 0
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(12.dp),
+            .background(StarSnapColor.surface)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -420,7 +472,8 @@ private fun ChatInputBar(
                 .weight(1f)
                 .height(48.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(CustomColor.container)
+                .background(StarSnapColor.surfaceSubtle)
+                .border(1.dp, StarSnapColor.border, RoundedCornerShape(24.dp))
                 .padding(horizontal = 18.dp),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -444,16 +497,22 @@ private fun ChatInputBar(
         Spacer(modifier = Modifier.width(8.dp))
         IconButton(
             onClick = onSend,
-            enabled = value.text.isNotBlank(),
+            enabled = canSend,
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(CustomColor.primary)
+                .background(
+                    if (canSend) StarSnapColor.brand else StarSnapColor.surfaceSubtle
+                )
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "send",
-                tint = CustomColor.light_black
+                contentDescription = if (cooldownRemainingSeconds > 0) {
+                    "${cooldownRemainingSeconds}초 후 메시지 전송 가능"
+                } else {
+                    "메시지 보내기"
+                },
+                tint = if (canSend) StarSnapColor.onBrand else StarSnapColor.textMuted
             )
         }
     }
