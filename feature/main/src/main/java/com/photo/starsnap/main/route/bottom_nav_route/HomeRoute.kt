@@ -1,7 +1,6 @@
 package com.photo.starsnap.main.route.bottom_nav_route
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -9,20 +8,27 @@ import com.photo.starsnap.main.ui.screen.main.snap_list.SnapListScreen
 import com.photo.starsnap.main.ui.screen.main.snap_list.SnapScreen
 import com.photo.starsnap.main.utils.NavigationRoute
 import com.photo.starsnap.main.viewmodel.main.SnapViewModel
+import com.photo.starsnap.main.viewmodel.main.StarViewModel
+import com.photo.starsnap.main.viewmodel.main.UserViewModel
 
 @Composable
-fun HomeRoute(navController: NavController, snapViewModel: SnapViewModel) {
-    val navController = rememberNavController()
+fun HomeRoute(
+    snapViewModel: SnapViewModel,
+    starViewModel: StarViewModel,
+    userViewModel: UserViewModel,
+    onNavigate: (String) -> Unit
+) {
+    val homeNavController = rememberNavController()
     NavHost(
-        navController = navController,
+        navController = homeNavController,
         startDestination = NavigationRoute.SNAP_LIST,
         route = NavigationRoute.HOME_ROUTE
     ) {
         composable(NavigationRoute.SNAP_LIST) {
-            SnapListScreen(navController, snapViewModel)
+            SnapListScreen(homeNavController, snapViewModel)
         }
         composable(NavigationRoute.SNAP) {
-            SnapScreen(navController, snapViewModel)
+            SnapScreen(homeNavController, snapViewModel, starViewModel, userViewModel, onNavigate)
         }
     }
 }

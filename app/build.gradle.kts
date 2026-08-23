@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // Apply google-services plugin in the application module (required for Firebase / GMS processing)
+    alias(libs.plugins.google.services)
     id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
 }
@@ -11,7 +13,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.photo.starsnap"
+        // Must match a client package_name in app/google-services.json
+        applicationId = "com.photo.starsnap.main"
         minSdk = 28
         targetSdk = 35
         versionCode = 1
@@ -36,9 +39,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
-    kotlinOptions {
-        jvmTarget = "21"
-    }
     buildFeatures {
         compose = true
     }
@@ -53,9 +53,16 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
 dependencies {
     implementation(project(":feature:main"))
     implementation(project(":core:di"))
+    implementation(project(":core:datastore"))
     implementation(project(":core:model"))
     implementation(project(":core:network"))
 
@@ -64,8 +71,11 @@ dependencies {
 
     implementation(platform(libs.google.firebase.bom))
     implementation(libs.google.firebase.auth)
+    implementation(libs.google.firebase.messaging)
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.retrofit.core)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
 

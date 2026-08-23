@@ -5,8 +5,19 @@ object Constant {
     const val GALLERY_PHOTO_SIZE = 50
     const val STAR_SIZE = 50
     const val STAR_GROUP_SIZE = 50
-    private const val REGION = "ap-northeast-2"
-    private const val BUCKET_NAME = "starsnap"
+    private const val IMAGE_BASE_URL = "https://starsnap.kr"
 
-    fun getImageUrl(imageKey: String?) = "https://$BUCKET_NAME.s3.$REGION.amazonaws.com/$imageKey"
+    fun getImageUrl(imageKey: String?): String? {
+        val normalizedKey = imageKey
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() && it.lowercase() != "null" }
+            ?.trimStart('/')
+            ?: return null
+
+        if (normalizedKey.startsWith("http://") || normalizedKey.startsWith("https://")) {
+            return normalizedKey
+        }
+
+        return "$IMAGE_BASE_URL/$normalizedKey"
+    }
 }

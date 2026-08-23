@@ -2,9 +2,14 @@ package com.photo.starsnap.network.snap
 
 import com.photo.starsnap.network.dto.SliceResponseDto
 import com.photo.starsnap.network.dto.StatusDto
+import com.photo.starsnap.network.snap.dto.CommentDto
+import com.photo.starsnap.network.snap.dto.CreateCommentRequestDto
 import com.photo.starsnap.network.snap.dto.SnapDto
+import com.photo.starsnap.network.snap.dto.SnapLikeToggleDto
 import com.photo.starsnap.network.snap.dto.SnapResponseDto
 import okhttp3.RequestBody
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 
 class SnapApiRepositoryImpl @Inject constructor(
@@ -22,13 +27,13 @@ class SnapApiRepositoryImpl @Inject constructor(
     ) {
         return snapApi.createSnap(
             image,
-            title,
-            source,
-            dateTaken,
-            aiState,
-            tag,
-            starId,
-            starGroupId
+            title.toRequestBody("text/plain".toMediaType()),
+            source.toRequestBody("text/plain".toMediaType()),
+            dateTaken.toRequestBody("text/plain".toMediaType()),
+            aiState.toString().toRequestBody("text/plain".toMediaType()),
+            tag.map { it.toRequestBody("text/plain".toMediaType()) },
+            starId.map { it.toRequestBody("text/plain".toMediaType()) },
+            starGroupId.map { it.toRequestBody("text/plain".toMediaType()) }
         )
     }
 
@@ -48,15 +53,15 @@ class SnapApiRepositoryImpl @Inject constructor(
         starGroupId: List<String>,
     ): SnapDto {
         return snapApi.fixSnap(
-            snapId,
+            snapId.toRequestBody("text/plain".toMediaType()),
             image,
-            title,
-            source,
-            dateTaken,
-            aiState,
-            tag,
-            starId,
-            starGroupId
+            title.toRequestBody("text/plain".toMediaType()),
+            source.toRequestBody("text/plain".toMediaType()),
+            dateTaken.toRequestBody("text/plain".toMediaType()),
+            aiState.toString().toRequestBody("text/plain".toMediaType()),
+            tag.map { it.toRequestBody("text/plain".toMediaType()) },
+            starId.map { it.toRequestBody("text/plain".toMediaType()) },
+            starGroupId.map { it.toRequestBody("text/plain".toMediaType()) }
         )
     }
 
@@ -81,5 +86,29 @@ class SnapApiRepositoryImpl @Inject constructor(
         size: Int
     ): SliceResponseDto<SnapResponseDto> {
         return snapApi.getFeedSnap(page, size)
+    }
+
+    override suspend fun toggleSnapLike(snapId: String): SnapLikeToggleDto {
+        return snapApi.toggleSnapLike(snapId)
+    }
+
+    override suspend fun saveSnap(snapId: String): StatusDto {
+        return snapApi.saveSnap(snapId)
+    }
+
+    override suspend fun unSaveSnap(snapId: String): StatusDto {
+        return snapApi.unSaveSnap(snapId)
+    }
+
+    override suspend fun getSavedSnaps(): List<SnapResponseDto> {
+        return snapApi.getSavedSnaps()
+    }
+
+    override suspend fun getSnapsByStarGroup(starGroupId: String, page: Int, size: Int): SliceResponseDto<SnapResponseDto> {
+        return snapApi.getSnapsByStarGroup(starGroupId, page, size)
+    }
+
+    override suspend fun createComment(snapId: String, content: String): CommentDto {
+        return snapApi.createComment(CreateCommentRequestDto(content = content, snapId = snapId))
     }
 }

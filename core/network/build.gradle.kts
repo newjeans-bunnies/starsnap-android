@@ -31,6 +31,10 @@ dependencies {
     implementation(libs.retrofit.core)
     implementation(libs.gson)
 
+    // Keep okhttp at 4.x so Kotlin extension APIs like toRequestBody/toMediaType are available.
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.okhttp)
+
     implementation(libs.hilt.android)
     implementation(libs.hilt.compiler)
 

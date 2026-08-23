@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.google.services)
     alias(libs.plugins.kotlin.compose)
     id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
@@ -31,9 +30,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
-    kotlinOptions {
-        jvmTarget = "21"
-    }
 //    composeOptions {
 //        kotlinCompilerExtensionVersion = "1.5.13"
 //    }
@@ -49,10 +45,17 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
 dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:network"))
     implementation(project(":core:datastore"))
+    implementation(project(":core:di"))
     implementation(project(":core:model"))
 
     implementation(platform(libs.androidx.compose.bom))
@@ -62,12 +65,15 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material)
+    // Material icons (extended) for Icons.Filled / Icons.Default
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.compose.navigation)
     implementation(libs.androidx.compose.runtime)
 
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.activity.compose)
 
     implementation(libs.androidx.appcompat)
 
@@ -78,13 +84,14 @@ dependencies {
     implementation(platform(libs.google.firebase.bom))
     implementation(libs.google.firebase.auth)
 
-    implementation(libs.google.gms.services)
+    // removed google-services plugin from library/feature module — plugin must be applied only on the application module
     implementation(libs.google.android.gms.auth)
 
     implementation(libs.google.accompanist.animations)
 
     implementation(libs.google.identity.googleid)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit.core)
 
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)

@@ -1,26 +1,40 @@
 package com.photo.starsnap.main.ui.screen.main
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import androidx.compose.animation.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.photo.starsnap.designsystem.StarSnapColor
+import com.photo.starsnap.datastore.FcmTokenStore
 import com.photo.starsnap.main.ui.component.BottomNavigation
+import com.photo.starsnap.main.ui.component.StarSnapAppBar
 import com.photo.starsnap.main.route.bottom_nav_route.HomeRoute
 import com.photo.starsnap.main.route.bottom_nav_route.StarHubRoute
 import com.photo.starsnap.main.ui.screen.main.profile.ProfileScreen
 import com.photo.starsnap.main.ui.screen.main.search.SearchScreen
 import com.photo.starsnap.main.utils.BottomNavItem
+import com.photo.starsnap.main.utils.NavigationRoute.FIX_PROFILE
 import com.photo.starsnap.main.utils.NavigationRoute.HOME_ROUTE
+import com.photo.starsnap.main.utils.NavigationRoute.SETTING
 import com.photo.starsnap.main.viewmodel.main.SnapViewModel
 import com.photo.starsnap.main.viewmodel.main.StarViewModel
 import com.photo.starsnap.main.viewmodel.main.UploadViewModel
@@ -37,17 +51,37 @@ fun MainScreen(
     starViewModel: StarViewModel,
     onNavigate: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val pushNotificationsEnabled = remember {
+        FcmTokenStore(context).arePushNotificationsEnabled()
+    }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = {},
+    )
+
     LaunchedEffect(Unit) {
         Log.d("화면", "MainScreen")
         userViewModel.getUserData()
+
+        if (
+            pushNotificationsEnabled &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     val bottomNavItems = remember {
         listOf(
             BottomNavItem.Home,
-            BottomNavItem.Star,
-            BottomNavItem.AddSnap,
             BottomNavItem.Search,
+            BottomNavItem.AddSnap,
+            BottomNavItem.Star,
             BottomNavItem.User
         )
     }
@@ -56,12 +90,34 @@ fun MainScreen(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val userData by userViewModel.userData.collectAsState()
+    val profileImageKey = userData.profileImageUrl.takeUnless {
+        it.isBlank() || it.equals("null", ignoreCase = true)
+    }
 
     LaunchedEffect(currentRoute) {
         Log.d("현재 화면", "MainScreen: $currentRoute")
     }
 
     Scaffold(
+        containerColor = StarSnapColor.canvas,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            StarSnapAppBar(
+                profileImageKey = profileImageKey,
+                onHome = {
+                    if (currentRoute != BottomNavItem.Home.route) {
+                        navController.navigate(BottomNavItem.Home.route)
+                    }
+                },
+                onNotifications = {},
+                onProfile = {
+                    if (currentRoute != BottomNavItem.User.route) {
+                        navController.navigate(BottomNavItem.User.route)
+                    }
+                },
+            )
+        },
         bottomBar = {
             BottomNavigation(navController, bottomNavItems, onNavigate = onNavigate)
         }
@@ -72,10 +128,22 @@ fun MainScreen(
             modifier = Modifier.padding(padding)
         ) {
             composable(BottomNavItem.Home.route) {
-                HomeRoute(navController, snapViewModel)
+                HomeRoute(
+                    snapViewModel = snapViewModel,
+                    starViewModel = starViewModel,
+                    userViewModel = userViewModel,
+                    onNavigate = onNavigate
+                )
             }
             composable(BottomNavItem.User.route) {
-                ProfileScreen(navController, userViewModel)
+                ProfileScreen(
+                    mainNavController = navController,
+                    userViewModel = userViewModel,
+                    snapViewModel = snapViewModel,
+                    onEditProfile = { mainNavController.navigate(FIX_PROFILE) },
+                    onOpenSettings = { mainNavController.navigate(SETTING) },
+                    onOpenSnap = { onNavigate(it) }
+                )
             }
             composable(BottomNavItem.Star.route) {
                 StarHubRoute(rootNavController, starViewModel, onNavigate)

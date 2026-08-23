@@ -2,7 +2,9 @@ package com.photo.starsnap.network.snap
 
 import com.photo.starsnap.network.dto.SliceResponseDto
 import com.photo.starsnap.network.dto.StatusDto
+import com.photo.starsnap.network.snap.dto.CommentDto
 import com.photo.starsnap.network.snap.dto.SnapDto
+import com.photo.starsnap.network.snap.dto.SnapLikeToggleDto
 import com.photo.starsnap.network.snap.dto.SnapResponseDto
 import okhttp3.RequestBody
 
@@ -48,4 +50,16 @@ interface SnapRepository {
         page: Int,
         size: Int
     ): SliceResponseDto<SnapResponseDto>
+
+    suspend fun toggleSnapLike(snapId: String): SnapLikeToggleDto
+
+    suspend fun saveSnap(snapId: String): StatusDto
+
+    suspend fun unSaveSnap(snapId: String): StatusDto
+
+    suspend fun getSavedSnaps(): List<SnapResponseDto>
+
+    suspend fun getSnapsByStarGroup(starGroupId: String, page: Int, size: Int): SliceResponseDto<SnapResponseDto>
+
+    suspend fun createComment(snapId: String, content: String): CommentDto
 }
