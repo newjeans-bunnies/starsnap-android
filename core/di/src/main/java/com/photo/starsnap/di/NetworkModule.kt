@@ -30,7 +30,7 @@ import javax.inject.Singleton
 
 
 object Url {
-    const val BASE_URL = "http://master.hamtory.com:8080/"
+    val BASE_URL: String = BuildConfig.STARSNAP_API_BASE_URL
 }
 
 

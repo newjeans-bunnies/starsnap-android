@@ -1,8 +1,46 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
     id ("kotlin-kapt")
     id ("com.google.dagger.hilt.android")
+}
+
+val configuredStarsnapApiBaseUrl = providers.gradleProperty("STARSNAP_API_BASE_URL")
+    .orElse(providers.environmentVariable("STARSNAP_API_BASE_URL"))
+
+val starsnapApiBaseUrl = configuredStarsnapApiBaseUrl.orNull
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
+    ?: "http://master.hamtory.com:8080/"
+
+val escapedStarsnapApiBaseUrl = starsnapApiBaseUrl
+    .let { if (it.endsWith('/')) it else "$it/" }
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+
+val validateReleaseApiBaseUrl by tasks.registering {
+    group = "verification"
+    description = "Requires a non-empty HTTPS StarSnap API URL for release builds."
+    inputs.property("starsnapApiBaseUrl", configuredStarsnapApiBaseUrl.orElse(""))
+
+    doLast {
+        val releaseUrl = configuredStarsnapApiBaseUrl.orNull
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: throw GradleException("STARSNAP_API_BASE_URL is required for release builds")
+        val uri = URI(releaseUrl)
+        if (!uri.scheme.equals("https", ignoreCase = true) || uri.host.isNullOrBlank()) {
+            throw GradleException("STARSNAP_API_BASE_URL must be an absolute HTTPS URL for release builds")
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == "preReleaseBuild") {
+        dependsOn(validateReleaseApiBaseUrl)
+    }
 }
 
 android {
@@ -12,8 +50,14 @@ android {
     defaultConfig {
         minSdk = 28
 
+        buildConfigField("String", "STARSNAP_API_BASE_URL", "\"$escapedStarsnapApiBaseUrl\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     compileOptions {
