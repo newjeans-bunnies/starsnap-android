@@ -27,6 +27,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import android.content.Context
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 
 @HiltViewModel
@@ -151,6 +154,7 @@ class UploadViewModel @Inject constructor(
     }
 
     fun uploadSnap(
+        context: Context,
         title: String,
         tag: List<String>,
         source: String,
@@ -158,10 +162,60 @@ class UploadViewModel @Inject constructor(
         aiState: Boolean,
         commentsEnabled: Boolean
     ) = viewModelScope.launch {
-        Log.d(
-            TAG,
-            "uploadSnap: title=$title, tag=$tag, source=$source, dateTaken=$dateTaken, aiState=$aiState, commentsEnabled=$commentsEnabled, selectedStars=${_selectedStars.value.size}, selectedStarGroups=${_selectedStarGroups.value.size}"
-        )
+        try {
+            if (_selectedImages.value.isEmpty()) {
+                Log.e(TAG, "No images selected")
+                return@launch
+            }
+
+            // 첫 번째 선택 이미지 사용
+            val firstImage = _selectedImages.value.first()
+            val requestBody = getRequestBodyFromUri(context, firstImage.imageUri)
+
+            if (requestBody == null) {
+                Log.e(TAG, "Failed to convert URI to RequestBody")
+                return@launch
+            }
+
+            // Star ID와 StarGroup ID 추출
+            val starIds = _selectedStars.value.map { it.id.toString() }
+            val starGroupIds = _selectedStarGroups.value.map { it.id.toString() }
+
+            // 서버 API 호출
+            snapRepository.createSnap(
+                image = requestBody,
+                title = title,
+                source = source,
+                dateTaken = dateTaken,
+                aiState = aiState,
+                tag = tag,
+                starId = starIds,
+                starGroupId = starGroupIds
+            )
+
+            Log.d(TAG, "Snap created successfully")
+            // 여기에 성공 콜백이나 네비게이션 로직 추가 가능
+        } catch (e: Exception) {
+            Log.e(TAG, "Error uploading snap: ${e.message}", e)
+        }
+    }
+
+    // Uri로부터 RequestBody를 생성하는 헬퍼 함수 (Scoped Storage 호환)
+    private fun getRequestBodyFromUri(context: Context, uri: Uri): okhttp3.RequestBody? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(uri)
+            if (inputStream != null) {
+                val bytes = inputStream.readBytes()
+                inputStream.close()
+                bytes.toRequestBody("image/jpeg".toMediaType())
+            } else {
+                Log.e(TAG, "Could not open input stream for URI: $uri")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error converting URI to RequestBody: ${e.message}", e)
+            null
+        }
     }
 }
 

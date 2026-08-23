@@ -1,12 +1,11 @@
 package com.photo.starsnap.main.ui.screen.main.upload
 
-import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,18 +15,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,111 +38,122 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.photo.starsnap.designsystem.CustomColor
-import com.photo.starsnap.designsystem.CustomColor.container
 import com.photo.starsnap.designsystem.R
-import com.photo.starsnap.designsystem.text.CustomTextStyle.title2
-import com.photo.starsnap.main.ui.component.BaseEditText
-import com.photo.starsnap.main.ui.component.PasswordEyeCheckBox
-import com.photo.starsnap.main.ui.component.TextEditHint
-import com.photo.starsnap.main.utils.EditTextType
+import com.photo.starsnap.designsystem.StarSnapColor
+import com.photo.starsnap.designsystem.text.StarSnapTypography
+import com.photo.starsnap.main.ui.component.skeleton.StarPickerSkeletonCard
+import com.photo.starsnap.main.utils.NavigationRoute
 import com.photo.starsnap.main.utils.clickableSingle
-import com.photo.starsnap.main.utils.getKeyboardType
-import com.photo.starsnap.main.utils.maxLangth
+import com.photo.starsnap.main.utils.constant.Constant.getImageUrl
 import com.photo.starsnap.main.viewmodel.main.UploadViewModel
 import com.photo.starsnap.network.star.dto.StarResponseDto
 import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.glide.GlideImage
-import kotlinx.coroutines.delay
 
 @Composable
 fun PickStarScreen(navController: NavController, uploadViewModel: UploadViewModel) {
     var searchStarName by remember { mutableStateOf("") }
-    var selectStars = uploadViewModel.selectedStars.collectAsStateWithLifecycle()
+    val selectedStars by uploadViewModel.selectedStars.collectAsStateWithLifecycle()
     val starList = uploadViewModel.starList(searchStarName).collectAsLazyPagingItems()
     val gridState = rememberLazyGridState()
 
-    LaunchedEffect(searchStarName) {
-        delay(2000)
-        starList.refresh()
-    }
-
     Scaffold(
-        Modifier
-            .padding(horizontal = 22.dp)
-            .fillMaxSize(), topBar = {
-            Row(
-                Modifier
+        containerColor = StarSnapColor.canvas,
+        topBar = {
+            Column(
+                modifier = Modifier
                     .fillMaxWidth()
-                    .height(70.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .background(StarSnapColor.surface)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Box(
-                    Modifier
-                        .weight(1F)
-                        .height(50.dp)
-                ) {
-                    SearchTextField("Star 검색") {
-                        searchStarName = it
-                    }
-                }
-                Box(
-                    Modifier
-                        .size(height = 70.dp, width = 60.dp)
-                        .clickableSingle {
-                            navController.popBackStack()
-                        }, contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "확인"
+                        text = "스타 선택",
+                        style = StarSnapTypography.heading,
+                        color = StarSnapColor.text,
+                        modifier = Modifier.weight(1f)
                     )
+                    PickerDoneButton(label = "확인 (${selectedStars.size})") {
+                        navController.navigate(NavigationRoute.SET_SNAP) {
+                            launchSingleTop = true
+                            popUpTo(NavigationRoute.PICK_STAR) { inclusive = true }
+                        }
+                    }
                 }
+                Spacer(Modifier.height(12.dp))
+                SearchTextField("스타 또는 그룹 검색") { searchStarName = it }
             }
-        }) { padding ->
-        Column(Modifier.padding(padding)) {
-            LazyVerticalGrid(
-                state = gridState,
-                modifier = Modifier.fillMaxSize(),
-                columns = GridCells.Fixed(1),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                if (starList.itemCount != 0) {
-                    items(starList.itemCount) { index ->
-                        val star = starList[index]
-                        Log.d("StarList", "index: $index, image: $star")
+        }
+    ) { padding ->
+        LazyVerticalGrid(
+            state = gridState,
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            when {
+                starList.loadState.refresh is LoadState.Loading -> {
+                    items(8) { StarPickerSkeletonCard(height = 150.dp) }
+                }
 
-                        star?.let { s ->
-                            Log.d("PickStarScreen", "추가")
-                            val isSelected = selectStars.value.any { it.id == s.id }  // ← 선택 여부 계산
-
-                            StarItem(s, isSelected) {
-                                uploadViewModel.selectedStar(s)
-                            }
-                        } ?: Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(70.dp)
-                                .background(CustomColor.yellow_100)
+                starList.loadState.refresh is LoadState.Error -> {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        PickerStateCard(
+                            title = "스타 목록을 불러오지 못했어요",
+                            actionLabel = "다시 시도",
+                            onAction = starList::retry
                         )
                     }
-                } else {
-                    items(20) { index ->
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(80.dp)
-                                .background(
-                                    shape = RoundedCornerShape(12.dp), color = CustomColor.container
-                                )
+                }
+
+                starList.itemCount == 0 -> {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        PickerStateCard(title = "표시할 스타가 없어요")
+                    }
+                }
+
+                else -> {
+                    items(starList.itemCount) { index ->
+                        val star = starList[index]
+                        if (star == null) {
+                            StarPickerSkeletonCard(height = 150.dp)
+                        } else {
+                            StarItem(
+                                star = star,
+                                selected = selectedStars.any { it.id == star.id },
+                                onClick = { uploadViewModel.selectedStar(star) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (starList.loadState.append is LoadState.Loading) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = StarSnapColor.brandActive,
+                            strokeWidth = 2.dp
                         )
                     }
                 }
@@ -157,45 +168,71 @@ fun StarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    var onClickState by remember { mutableStateOf(selected) }
-    var backgroundColor = if (onClickState) CustomColor.yellow_200 else CustomColor.container
-    Row(
-        Modifier
+    val shape = RoundedCornerShape(16.dp)
+    Box(
+        modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
-            .background(shape = RoundedCornerShape(12.dp), color = backgroundColor)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                onClick()
-                onClickState = !onClickState
-            },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(Modifier.width(16.dp))
-        GlideImage(
-            modifier = Modifier
-                .size(55.dp)
-                .clip(CircleShape)
-                .background(CustomColor.light_gray),
-            imageModel = { star.imageKey },
-            imageOptions = ImageOptions(
-                contentScale = ContentScale.Crop, alignment = Alignment.Center
+            .height(150.dp)
+            .clip(shape)
+            .background(if (selected) StarSnapColor.brandSoft else StarSnapColor.surface)
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) StarSnapColor.brandActive else StarSnapColor.border,
+                shape = shape
             )
-        )
-        Spacer(Modifier.width(10.dp))
+            .clickableSingle(onClick = onClick)
+            .padding(12.dp)
+    ) {
         Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            GlideImage(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(StarSnapColor.surfaceSubtle),
+                imageModel = { getImageUrl(star.imageKey) },
+                imageOptions = ImageOptions(
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center
+                )
+            )
+            Spacer(Modifier.height(10.dp))
             Text(
                 text = star.name,
+                style = StarSnapTypography.body.copy(color = StarSnapColor.text),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
             Text(
-                text = star.nickname,
+                text = star.nickname?.ifBlank { "-" } ?: "-",
+                style = StarSnapTypography.caption.copy(color = StarSnapColor.textMuted),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
         }
-        Spacer(Modifier.weight(1F))
+
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(StarSnapColor.brand),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = "선택됨",
+                    modifier = Modifier.size(15.dp),
+                    tint = StarSnapColor.onBrand
+                )
+            }
+        }
     }
 }
 
@@ -204,38 +241,88 @@ fun SearchTextField(hint: String, inputText: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     BasicTextField(
         value = text,
-        textStyle = title2,
+        textStyle = StarSnapTypography.label.copy(color = StarSnapColor.text),
         onValueChange = { input ->
-            if (100 > input.length) {
+            if (input.length <= 100) {
                 text = input
-                inputText(text)
+                inputText(input)
             }
         },
         modifier = Modifier
-            .height(50.dp)
-            .background(container, shape = RoundedCornerShape(size = 12.dp)),
+            .fillMaxWidth()
+            .height(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(StarSnapColor.surface)
+            .border(1.dp, StarSnapColor.border, RoundedCornerShape(12.dp)),
         singleLine = true,
         decorationBox = { innerTextField ->
             Row(
-                modifier = Modifier.padding(start = 0.dp, end = 15.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.width(11.dp))
                 Icon(
                     modifier = Modifier.size(18.dp),
                     imageVector = ImageVector.vectorResource(R.drawable.search_icon),
-                    contentDescription = "search_icon"
+                    contentDescription = null,
+                    tint = StarSnapColor.textMuted
                 )
-                Spacer(modifier = Modifier.width(9.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Box(
-                    Modifier.weight(1F)
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    innerTextField()
                     if (text.isEmpty()) {
-                        TextEditHint(hint)
+                        Text(
+                            text = hint,
+                            style = StarSnapTypography.label,
+                            color = StarSnapColor.textMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
+                    innerTextField()
                 }
             }
         }
     )
+}
+
+@Composable
+fun PickerDoneButton(label: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(StarSnapColor.brand)
+            .clickableSingle(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, style = StarSnapTypography.label, color = StarSnapColor.onBrand)
+    }
+}
+
+@Composable
+fun PickerStateCard(
+    title: String,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(StarSnapColor.surface)
+            .border(1.dp, StarSnapColor.border, RoundedCornerShape(16.dp))
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(title, style = StarSnapTypography.label, color = StarSnapColor.textSubtle)
+        if (actionLabel != null && onAction != null) {
+            Spacer(Modifier.height(12.dp))
+            PickerDoneButton(actionLabel, onAction)
+        }
+    }
 }

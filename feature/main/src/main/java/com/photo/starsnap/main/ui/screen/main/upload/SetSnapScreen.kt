@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -40,7 +41,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -62,17 +62,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.kizitonwose.calendar.compose.HorizontalCalendar
@@ -81,15 +79,14 @@ import com.kizitonwose.calendar.core.CalendarDay
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.daysOfWeek
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
-import com.photo.starsnap.designsystem.CustomColor
 import com.photo.starsnap.designsystem.R
 import com.photo.starsnap.designsystem.StarSnapColor
-import com.photo.starsnap.designsystem.text.CustomTextStyle
-import com.photo.starsnap.designsystem.text.CustomTextStyle.title9
+import com.photo.starsnap.designsystem.text.StarSnapTypography
 import com.photo.starsnap.main.ui.component.TextEditHint
 import com.photo.starsnap.main.ui.component.TopAppBar
 import com.photo.starsnap.main.utils.NavigationRoute
 import com.photo.starsnap.main.utils.clickableSingle
+import com.photo.starsnap.main.utils.constant.Constant.getImageUrl
 import com.photo.starsnap.main.viewmodel.main.CroppingImage
 import com.photo.starsnap.main.viewmodel.main.UploadViewModel
 import com.skydoves.landscapist.ImageOptions
@@ -112,7 +109,7 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
     var showDots by remember { mutableStateOf(false) }
     var showModalInput by remember { mutableStateOf(false) }
 
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(LocalDate.now()) }
 
     // snap 정보
     var title by remember { mutableStateOf("") } // 제목
@@ -120,7 +117,7 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
     var tags by remember { mutableStateOf(listOf<String>()) } // 태그
     val stars by uploadViewModel.selectedStars.collectAsStateWithLifecycle()
     val starGroups by uploadViewModel.selectedStarGroups.collectAsStateWithLifecycle()
-    var dateTaken by remember { mutableStateOf("YYYY-MM-DD") }
+    var dateTaken by remember { mutableStateOf(LocalDate.now().toString()) }
     var aiState by remember { mutableStateOf(false) } // AI 여부
     var commentsEnabled by remember { mutableStateOf(true) } // 댓글 허용 여부
 
@@ -137,16 +134,19 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
     val canSubmit = title.isNotBlank() && selectedPhotos.isNotEmpty()
 
     Scaffold(
-        topBar = { TopAppBar("새로운 스냅", onBack = { navController.popBackStack() }) },
+        containerColor = StarSnapColor.canvas,
+        topBar = { TopAppBar("스냅 업로드", onBack = { navController.popBackStack() }) },
         bottomBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(StarSnapColor.surface)
                     .padding(horizontal = 16.dp, vertical = 12.dp)
-                    .height(54.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (canSubmit) CustomColor.yellow_500 else CustomColor.button)
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (canSubmit) StarSnapColor.brand else StarSnapColor.borderStrong
+                    )
                     .then(
                         if (canSubmit) {
                             Modifier.clickableSingle {
@@ -167,9 +167,9 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (canSubmit) "스냅 만들기" else "제목을 입력해 주세요",
-                    color = if (canSubmit) CustomColor.light_black else CustomColor.gray,
-                    style = CustomTextStyle.TitleSmall
+                    text = if (canSubmit) "게시하기" else "제목과 사진을 확인해 주세요",
+                    color = if (canSubmit) StarSnapColor.onBrand else StarSnapColor.textMuted,
+                    style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
                 )
             }
         },
@@ -179,24 +179,29 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState(), enabled = true, flingBehavior = null)
+                .background(StarSnapColor.canvas)
                 .padding(bottom = 8.dp),
         ) {
             val starGridState = rememberLazyGridState()
             val starGroupGridState = rememberLazyGridState()
 
-            selectedPhoto(pagerState, selectedPhotos)
+            selectedPhoto(
+                pagerState = pagerState,
+                selectedPhotos = selectedPhotos,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
             PagerDots(showDots = showDots, pagerState = pagerState, selectedPhotos = selectedPhotos)
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "선택된 사진 ${selectedPhotos.size}장",
-                    style = CustomTextStyle.title9,
-                    color = CustomColor.sub_title
+                    style = StarSnapTypography.label,
+                    color = StarSnapColor.textSubtle
                 )
             }
 
@@ -205,32 +210,23 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                 subtitle = "제목은 필수입니다. 태그는 최대 5개까지 가능해요."
             ) {
                 InputText(
-                    hint = "제목을 입력하세요",
+                    hint = "스냅 제목을 입력하세요",
                     text = title,
-                    maxLength = 60,
-                    isRequired = true
+                    maxLength = 60
                 ) {
                     title = it
-                }
-                Spacer(Modifier.height(10.dp))
-                InputText(
-                    hint = "출처를 입력 해주세요",
-                    text = source,
-                    maxLength = 60,
-                ) {
-                    source = it
                 }
                 Spacer(Modifier.height(10.dp))
                 ChipTextField(tags = tags, onTagsChange = { tags = it })
             }
 
             SectionCard(
-                title = "Star"
+                title = "스타"
             ) {
             LazyHorizontalGrid(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(104.dp),
                 state = starGridState,
                 rows = GridCells.Fixed(1),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -241,22 +237,22 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                         // Add tile
                         Column(
                             modifier = Modifier
-                                .width(70.dp)
+                                .width(92.dp)
                                 .clickableSingle { navController.navigate(NavigationRoute.PICK_STAR) }) {
                             Box(
                                 modifier = Modifier
-                                    .background(
-                                        CustomColor.light_gray.copy(alpha = 0.3f),
-                                        shape = CircleShape
-                                    )
-                                    .width(70.dp)
-                                    .height(70.dp),
-                                contentAlignment = Alignment.BottomEnd
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(StarSnapColor.surfaceSubtle)
+                                    .border(1.dp, StarSnapColor.border, CircleShape)
+                                    .align(Alignment.CenterHorizontally),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     modifier = Modifier.size(20.dp),
                                     imageVector = ImageVector.vectorResource(R.drawable.plus_circle_icon),
                                     contentDescription = "plus_circle_icon",
+                                    tint = StarSnapColor.textSubtle
                                 )
                             }
                             Spacer(Modifier.height(8.dp))
@@ -265,32 +261,55 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                                 textAlign = TextAlign.Center,
                                 text = "추가하기",
                                 maxLines = 1,
-                                style = title9
+                                style = StarSnapTypography.label,
+                                color = StarSnapColor.textSubtle
                             )
                         }
                     } else {
                         // Star item from the collected list
                         val star = stars[index - 1]
                         Column(
-                            modifier = Modifier.width(70.dp)
+                            modifier = Modifier
+                                .width(92.dp)
+                                .clickableSingle { uploadViewModel.selectedStar(star) }
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .background(
-                                        CustomColor.light_gray.copy(alpha = 0.15f),
-                                        shape = CircleShape
-                                    )
-                                    .width(70.dp)
-                                    .height(70.dp),
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(StarSnapColor.surfaceSubtle)
+                                    .border(1.dp, StarSnapColor.border, CircleShape)
+                                    .align(Alignment.CenterHorizontally),
                                 contentAlignment = Alignment.Center
-                            ) {}
+                            ) {
+                                GlideImage(
+                                    modifier = Modifier.fillMaxSize(),
+                                    imageModel = { getImageUrl(star.imageKey) },
+                                    imageOptions = ImageOptions(
+                                        contentScale = ContentScale.Crop,
+                                        alignment = Alignment.Center
+                                    )
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(StarSnapColor.surface)
+                                        .border(1.dp, StarSnapColor.border, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("×", style = StarSnapTypography.caption, color = StarSnapColor.textSubtle)
+                                }
+                            }
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Center,
                                 text = star.name,
                                 maxLines = 1,
-                                style = title9
+                                style = StarSnapTypography.label,
+                                color = StarSnapColor.textSubtle
                             )
                         }
                     }
@@ -298,15 +317,14 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
             }
             }
 
-            SectionCard(title = "StarGroup") {
+            SectionCard(title = "스타그룹") {
             LazyHorizontalGrid(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(87.dp),
+                    .height(96.dp),
                 state = starGroupGridState,
                 rows = GridCells.Fixed(1),
-                horizontalArrangement = Arrangement.spacedBy(1.dp),
-                verticalArrangement = Arrangement.spacedBy(1.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
                 items(starGroups.size + 1) { index ->
@@ -314,24 +332,25 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                         // Add tile
                         Column(
                             modifier = Modifier
-                                .width(100.dp)
+                                .width(112.dp)
                                 .clickableSingle {
                                     navController.navigate(NavigationRoute.PICK_STAR_GROUP)
                                 }) {
                             Box(
                                 modifier = Modifier
-                                    .background(
-                                        CustomColor.light_gray.copy(alpha = 0.3f),
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .width(95.dp)
-                                    .height(60.dp),
-                                contentAlignment = Alignment.BottomEnd
+                                    .width(100.dp)
+                                    .height(60.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(StarSnapColor.surfaceSubtle)
+                                    .border(1.dp, StarSnapColor.border, RoundedCornerShape(12.dp))
+                                    .align(Alignment.CenterHorizontally),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     modifier = Modifier.size(20.dp),
                                     imageVector = ImageVector.vectorResource(R.drawable.plus_circle_icon),
                                     contentDescription = "plus_circle_icon",
+                                    tint = StarSnapColor.textSubtle
                                 )
                             }
                             Spacer(Modifier.height(8.dp))
@@ -340,7 +359,8 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                                 textAlign = TextAlign.Center,
                                 text = "추가하기",
                                 maxLines = 1,
-                                style = title9
+                                style = StarSnapTypography.label,
+                                color = StarSnapColor.textSubtle
                             )
                         }
                     } else {
@@ -348,21 +368,37 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                         val starGroup = starGroups[index - 1]
                         Column(
                             modifier = Modifier
-                                .width(100.dp)
-                                .clickableSingle {
-//                                    uploadViewModel.selectedStarGroup(starGroup)
-                                }) {
+                                .width(112.dp)
+                                .clickableSingle { uploadViewModel.selectedStarGroup(starGroup) }) {
                             Box(
                                 modifier = Modifier
-                                    .background(
-                                        CustomColor.light_gray.copy(alpha = 0.3f),
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
-                                    .width(95.dp)
-                                    .height(60.dp),
-                                contentAlignment = Alignment.BottomEnd
+                                    .width(100.dp)
+                                    .height(60.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(StarSnapColor.surfaceSubtle)
+                                    .border(1.dp, StarSnapColor.border, RoundedCornerShape(12.dp))
+                                    .align(Alignment.CenterHorizontally),
+                                contentAlignment = Alignment.Center
                             ) {
-
+                                GlideImage(
+                                    modifier = Modifier.fillMaxSize(),
+                                    imageModel = { getImageUrl(starGroup.imageKey) },
+                                    imageOptions = ImageOptions(
+                                        contentScale = ContentScale.Crop,
+                                        alignment = Alignment.Center
+                                    )
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(StarSnapColor.surface)
+                                        .border(1.dp, StarSnapColor.border, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("×", style = StarSnapTypography.caption, color = StarSnapColor.textSubtle)
+                                }
                             }
                             Spacer(Modifier.height(8.dp))
                             Text(
@@ -370,7 +406,8 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                                 textAlign = TextAlign.Center,
                                 text = starGroup.name,
                                 maxLines = 1,
-                                style = title9
+                                style = StarSnapTypography.label,
+                                color = StarSnapColor.textSubtle
                             )
                         }
                     }
@@ -384,12 +421,26 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
             SectionCard(title = "촬영 정보") {
                 Text(
                     text = "사진 찍은 날짜",
-                    style = CustomTextStyle.title9,
-                    color = CustomColor.sub_title
+                    style = StarSnapTypography.label,
+                    color = StarSnapColor.textSubtle
                 )
                 Spacer(Modifier.height(6.dp))
                 DateTextField(dateTaken) {
                     showModalInput = true
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "출처",
+                    style = StarSnapTypography.label,
+                    color = StarSnapColor.textSubtle
+                )
+                Spacer(Modifier.height(6.dp))
+                InputText(
+                    hint = "Instagram @newjeans",
+                    text = source,
+                    maxLength = 60
+                ) {
+                    source = it
                 }
             }
 
@@ -401,14 +452,14 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "AI 생성 사진",
-                        style = CustomTextStyle.title2,
-                        color = CustomColor.title
+                        style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold),
+                        color = StarSnapColor.text
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = "AI로 제작된 사진은 반드시 체크해 주세요",
-                        style = CustomTextStyle.body1,
-                        color = CustomColor.sub_title
+                        style = StarSnapTypography.caption,
+                        color = StarSnapColor.textMuted
                     )
                 }
                 Switch(
@@ -419,16 +470,16 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                     },
                 colors = SwitchDefaults.colors(
                         // 1. 켜졌을 때(Checked) 색상
-                        checkedThumbColor = CustomColor.container, // 동그라미 색 (보라색 예시)
-                        checkedTrackColor = CustomColor.yellow_500, // 배경 색 (연보라색 예시)
+                        checkedThumbColor = StarSnapColor.surface,
+                        checkedTrackColor = StarSnapColor.brand,
 
                         // 2. 꺼졌을 때(Unchecked) 색상
-                        uncheckedThumbColor = CustomColor.container, // 동그라미 색
-                        uncheckedTrackColor = CustomColor.yellow_200,      // 배경 색
+                        uncheckedThumbColor = StarSnapColor.surface,
+                        uncheckedTrackColor = StarSnapColor.borderStrong,
 
                         // 3. (선택사항) 테두리 색상 - Material 3 등에서 사용
-                        uncheckedBorderColor = CustomColor.container,
-                        checkedBorderColor = CustomColor.container
+                        uncheckedBorderColor = StarSnapColor.border,
+                        checkedBorderColor = StarSnapColor.brand
                     )
                 )
             }
@@ -440,14 +491,14 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "댓글 허용",
-                        style = CustomTextStyle.title2,
-                        color = CustomColor.title
+                        style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold),
+                        color = StarSnapColor.text
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = "댓글 기능을 비활성화하려면 끄세요",
-                        style = CustomTextStyle.body1,
-                        color = CustomColor.sub_title
+                        style = StarSnapTypography.caption,
+                        color = StarSnapColor.textMuted
                     )
                 }
                 Switch(
@@ -458,16 +509,16 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                     },
                     colors = SwitchDefaults.colors(
                         // 1. 켜졌을 때(Checked) 색상
-                        checkedThumbColor = CustomColor.container, // 동그라미 색 (보라색 예시)
-                        checkedTrackColor = CustomColor.yellow_500, // 배경 색 (연보라색 예시)
+                        checkedThumbColor = StarSnapColor.surface,
+                        checkedTrackColor = StarSnapColor.brand,
 
                         // 2. 꺼졌을 때(Unchecked) 색상
-                        uncheckedThumbColor = CustomColor.container, // 동그라미 색
-                        uncheckedTrackColor = CustomColor.yellow_200,      // 배경 색
+                        uncheckedThumbColor = StarSnapColor.surface,
+                        uncheckedTrackColor = StarSnapColor.borderStrong,
 
                         // 3. (선택사항) 테두리 색상 - Material 3 등에서 사용
-                        uncheckedBorderColor = CustomColor.container,
-                        checkedBorderColor = CustomColor.container
+                        uncheckedBorderColor = StarSnapColor.border,
+                        checkedBorderColor = StarSnapColor.brand
                     )
                 )
             }
@@ -477,7 +528,7 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
         }
         if (showModalInput) {
             Dialog(onDismissRequest = { showModalInput = false }) {
-                Surface(shape = RoundedCornerShape(12.dp), color = Color.White) {
+                Surface(shape = RoundedCornerShape(16.dp), color = StarSnapColor.surface) {
 
                     Column(modifier = Modifier.padding(16.dp)) {
                         // 달력 모달 본문
@@ -545,16 +596,17 @@ fun ChipTextField(
                 input = text
             }
         },
-        textStyle = CustomTextStyle.title5.copy(color = CustomColor.light_black),
+        textStyle = StarSnapTypography.label.copy(color = StarSnapColor.text),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { addTagIfPossible(input) }),
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(CustomColor.container.copy(alpha = 0.8f))
+            .background(StarSnapColor.surface)
             .border(
-                border = BorderStroke(0.5.dp, CustomColor.light_gray.copy(alpha = 0.55f)),
+                border = BorderStroke(1.dp, StarSnapColor.border),
                 shape = RoundedCornerShape(10.dp)
             )
             .padding(horizontal = 12.dp)
@@ -578,15 +630,21 @@ fun ChipTextField(
                 tags.forEach { tag ->
                     Box(
                         modifier = Modifier
-                            .background(StarSnapColor.textSoft, RoundedCornerShape(16.dp))
+                            .background(StarSnapColor.surfaceSubtle, RoundedCornerShape(16.dp))
+                            .border(1.dp, StarSnapColor.border, RoundedCornerShape(16.dp))
                             .padding(horizontal = 10.dp, vertical = 6.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(tag, color = StarSnapColor.surface)
+                            Text(
+                                text = "#$tag",
+                                style = StarSnapTypography.label,
+                                color = StarSnapColor.textSubtle
+                            )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 "✕",
+                                style = StarSnapTypography.caption,
                                 color = StarSnapColor.textMuted,
                                 modifier = Modifier.clickableSingle {
                                     onTagsChange(tags - tag)
@@ -616,11 +674,11 @@ fun DateTextField(text: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(42.dp)
+            .height(44.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(CustomColor.container.copy(alpha = 0.8f))
+            .background(StarSnapColor.surface)
             .border(
-                border = BorderStroke(0.5.dp, CustomColor.light_gray.copy(alpha = 0.55f)),
+                border = BorderStroke(1.dp, StarSnapColor.border),
                 shape = RoundedCornerShape(10.dp)
             )
             .clickableSingle {
@@ -632,14 +690,14 @@ fun DateTextField(text: String, onClick: () -> Unit) {
             modifier = Modifier.size(18.dp),
             imageVector = ImageVector.vectorResource(R.drawable.calendar_icon),
             contentDescription = "calendar_icon",
-            tint = CustomColor.sub_title
+            tint = StarSnapColor.textMuted
         )
         Spacer(modifier = Modifier.width(9.dp))
         Box(
             Modifier.weight(1F)
         ) {
             if (text == "YYYY-MM-DD") TextEditHint(text)
-            else Text(text = text, style = CustomTextStyle.body1)
+            else Text(text = text, style = StarSnapTypography.label, color = StarSnapColor.text)
         }
     }
 }
@@ -688,13 +746,14 @@ fun calendar(currentSelectedDate: LocalDate?, onDateChange: (LocalDate?) -> Unit
                     },
                 imageVector = ImageVector.vectorResource(R.drawable.chevron_left_icon),
                 contentDescription = "chevron_left_icon",
-                tint = CustomColor.sub_title
+                tint = StarSnapColor.textSubtle
             )
             Text(
                 text = monthTitle,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1F),
-                style = CustomTextStyle.title1
+                style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold),
+                color = StarSnapColor.text
             )
             // Conditionally show right arrow icon or spacer to preserve layout
             if (visibleMonth.isBefore(endMonth)) {
@@ -713,7 +772,7 @@ fun calendar(currentSelectedDate: LocalDate?, onDateChange: (LocalDate?) -> Unit
                         },
                     imageVector = ImageVector.vectorResource(R.drawable.chevron_right_icon),
                     contentDescription = "chevron_right_icon",
-                    tint = CustomColor.sub_title
+                    tint = StarSnapColor.textSubtle
                 )
             } else {
                 Spacer(modifier = Modifier.size(18.dp))
@@ -740,23 +799,28 @@ fun Day(day: CalendarDay, isSelected: Boolean, onClick: (CalendarDay) -> Unit) {
     val d = day.date
 
     val textColor = when {
-        !isMonthDate -> CustomColor.light_gray
-        d.dayOfWeek == java.time.DayOfWeek.SUNDAY -> Color.Red
-        d.dayOfWeek == java.time.DayOfWeek.SATURDAY -> Color.Blue
-        else -> CustomColor.light_black
+        !isMonthDate -> StarSnapColor.textMuted
+        d.dayOfWeek == java.time.DayOfWeek.SUNDAY -> StarSnapColor.danger
+        d.dayOfWeek == java.time.DayOfWeek.SATURDAY -> StarSnapColor.info
+        else -> StarSnapColor.text
     }
 
     Box(
         modifier = Modifier
             .aspectRatio(1f)
             .clip(CircleShape)
-            .background(color = if (isSelected) CustomColor.container else Color.Transparent)
+            .background(
+                color = if (isSelected) StarSnapColor.brandSoft
+                else StarSnapColor.surface.copy(alpha = 0f)
+            )
             .clickable(
                 enabled = isMonthDate, onClick = { onClick(day) }),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = d.dayOfMonth.toString(), color = textColor
+            text = d.dayOfMonth.toString(),
+            style = StarSnapTypography.caption,
+            color = textColor
         )
     }
 }
@@ -768,6 +832,8 @@ fun DaysOfWeekTitle(daysOfWeek: List<DayOfWeek>) {
             Text(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
+                style = StarSnapTypography.caption,
+                color = StarSnapColor.textSubtle,
                 text = dayOfWeek.getDisplayName(
                     java.time.format.TextStyle.SHORT, Locale.getDefault()
                 ),
@@ -788,7 +854,7 @@ fun StarProfile() {
         Box(
             modifier = Modifier
                 .background(
-                    CustomColor.light_gray.copy(alpha = 0.3f), shape = CircleShape
+                    StarSnapColor.surfaceSubtle, shape = CircleShape
                 )
                 .width(70.dp)
                 .height(70.dp), contentAlignment = Alignment.BottomEnd
@@ -821,17 +887,28 @@ fun SectionCard(
 ) {
     Column(
         modifier = Modifier
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(StarSnapColor.surface)
+            .border(1.dp, StarSnapColor.border, RoundedCornerShape(16.dp))
+            .padding(16.dp)
     ) {
-        Text(text = title, style = CustomTextStyle.title9, color = CustomColor.sub_title)
+        Text(
+            text = title,
+            style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold),
+            color = StarSnapColor.text
+        )
         if (!subtitle.isNullOrBlank()) {
-            Spacer(Modifier.height(3.dp))
-            Text(text = subtitle, style = CustomTextStyle.body1, color = CustomColor.sub_title)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = subtitle,
+                style = StarSnapTypography.caption,
+                color = StarSnapColor.textMuted
+            )
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
         content()
-        Spacer(Modifier.height(8.dp))
-        Divider(color = CustomColor.light_gray.copy(alpha = 0.45f), thickness = 0.6.dp)
     }
 }
 
@@ -846,6 +923,7 @@ fun InputText(
 ) {
     BasicTextField(
         value = text,
+        textStyle = StarSnapTypography.label.copy(color = StarSnapColor.text),
         onValueChange = { it ->
             if (it.length <= maxLength) {
                 inputText(it)
@@ -853,10 +931,11 @@ fun InputText(
         },
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(CustomColor.container.copy(alpha = 0.8f))
+            .background(StarSnapColor.surface)
             .border(
-                border = BorderStroke(0.5.dp, CustomColor.light_gray.copy(alpha = 0.55f)),
+                border = BorderStroke(1.dp, StarSnapColor.border),
                 shape = RoundedCornerShape(10.dp)
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -870,16 +949,16 @@ fun InputText(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = "${text.length}/$maxLength",
-                        style = CustomTextStyle.body1,
-                        color = CustomColor.gray
+                        style = StarSnapTypography.caption,
+                        color = StarSnapColor.textMuted
                     )
                 }
                 if (isRequired && text.isBlank()) {
                     Spacer(Modifier.height(6.dp))
                     Text(
                         text = "필수 입력 항목입니다.",
-                        style = CustomTextStyle.body1,
-                        color = CustomColor.error
+                        style = StarSnapTypography.caption,
+                        color = StarSnapColor.danger
                     )
                 }
             }
@@ -911,8 +990,9 @@ fun PagerDots(showDots: Boolean, pagerState: PagerState, selectedPhotos: List<Cr
                     .padding(horizontal = 4.dp)
                     .size(if (isSelected) 8.dp else 6.dp)
                     .background(
-                        color = if (isSelected) CustomColor.light_black
-                        else CustomColor.light_gray.copy(alpha = 0.3f), shape = CircleShape
+                        color = if (isSelected) StarSnapColor.text
+                        else StarSnapColor.borderStrong.copy(alpha = 0.3f),
+                        shape = CircleShape
                     )
             )
         }
@@ -920,12 +1000,18 @@ fun PagerDots(showDots: Boolean, pagerState: PagerState, selectedPhotos: List<Cr
 }
 
 @Composable
-fun selectedPhoto(pagerState: PagerState, selectedPhotos: List<CroppingImage>) {
+fun selectedPhoto(
+    pagerState: PagerState,
+    selectedPhotos: List<CroppingImage>,
+    modifier: Modifier = Modifier
+) {
     HorizontalPager(
         state = pagerState,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(260.dp),
+            .height(300.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(StarSnapColor.surfaceSubtle),
     ) { page ->
         val photo = selectedPhotos[page]
         GlideImage(

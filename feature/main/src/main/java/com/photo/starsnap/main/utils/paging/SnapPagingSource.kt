@@ -39,6 +39,7 @@ class SnapPagingSource(
                 nextKey = nextKey
             )
         } catch (exception: Exception) {
+            Log.e(TAG, "Failed to load snap feed page=${params.key ?: 0}", exception)
             LoadResult.Error(exception)
         }
     }
