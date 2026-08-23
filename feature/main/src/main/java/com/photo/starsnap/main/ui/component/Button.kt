@@ -6,9 +6,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -17,42 +19,49 @@ import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.photo.starsnap.designsystem.R
-import com.photo.starsnap.designsystem.CustomColor.yellow_400
-import com.photo.starsnap.designsystem.CustomColor.yellow_100
-import com.photo.starsnap.designsystem.CustomColor.light_black
-import com.photo.starsnap.designsystem.text.CustomTextStyle.TitleLarge
-import com.photo.starsnap.designsystem.text.CustomTextStyle.TitleMedium
-import com.photo.starsnap.designsystem.text.CustomTextStyle.title2
+import com.photo.starsnap.designsystem.StarSnapColor
+import com.photo.starsnap.designsystem.text.StarSnapTypography
 import com.photo.starsnap.main.utils.clickableSingle
+
+private val ButtonShape = RoundedCornerShape(12.dp)
+private val DefaultButtonHeight = 48.dp
 
 // 로그인, 회원가입 등 메인 버튼으로 사용
 @Composable
 fun MainButton(event: () -> Unit, enabled: Boolean, buttonText: String) {
-    val buttonBackground = if (enabled) yellow_400 else yellow_100
+    val buttonBackground = if (enabled) StarSnapColor.brand else StarSnapColor.brandSoft
+    val buttonTextColor = if (enabled) StarSnapColor.onBrand else StarSnapColor.textMuted
     Box(
         Modifier
             .clickableSingle(
                 enabled = enabled,
+                onClickLabel = buttonText,
+                role = Role.Button,
                 onClick = event
             )
-            .height(45.dp)
+            .height(DefaultButtonHeight)
             .fillMaxWidth()
-            .background(buttonBackground, RoundedCornerShape(size = 8.dp))
+            .background(buttonBackground, ButtonShape)
     ) {
-        Text(buttonText, Modifier.align(Alignment.Center), style = TitleMedium)
+        Text(
+            buttonText,
+            Modifier.align(Alignment.Center),
+            style = StarSnapTypography.label.copy(
+                color = buttonTextColor,
+                fontWeight = FontWeight.Bold,
+            ),
+        )
     }
 }
 
@@ -66,12 +75,18 @@ fun TextButton(
     buttonState: Boolean = true
 ) {
     Box(
-        modifier.clickableSingle(
-            enabled = buttonState,
-            onClick = onClick,
-        ), contentAlignment = Alignment.Center
+        modifier = modifier
+            .defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
+            .clickableSingle(
+                enabled = buttonState,
+                onClickLabel = text,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = textStyle, color = light_black)
+        Text(text, style = textStyle, color = StarSnapColor.text)
     }
 }
 
@@ -81,23 +96,28 @@ fun AppleLoginButton(onClick: () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
-            .height(55.dp)
-            .background(Color.Black, RoundedCornerShape(12.dp))
+            .height(DefaultButtonHeight)
+            .background(StarSnapColor.text, ButtonShape)
             .clickableSingle(
+                onClickLabel = "Apple로 로그인",
+                role = Role.Button,
                 onClick = onClick
             )
     ) {
         Image(
             painterResource(R.drawable.apple_icon),
-            "",
+            null,
             Modifier
-                .padding(start = 25.dp)
+                .padding(start = 20.dp)
                 .align(Alignment.CenterStart)
         )
         Text(
             stringResource(R.string.apple_login_button_text),
             Modifier.align(Alignment.Center),
-            Color.White
+            style = StarSnapTypography.label.copy(
+                color = StarSnapColor.surface,
+                fontWeight = FontWeight.SemiBold,
+            ),
         )
     }
 }
@@ -108,91 +128,133 @@ fun GoogleLoginButton(onClick: () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
-            .height(55.dp)
-            .background(Color.White, RoundedCornerShape(12.dp))
-            .border(width = 1.dp, shape = RoundedCornerShape(12.dp), color = Color.Black)
+            .height(DefaultButtonHeight)
+            .background(StarSnapColor.surface, ButtonShape)
+            .border(width = 1.dp, shape = ButtonShape, color = StarSnapColor.border)
             .clickableSingle(
+                onClickLabel = "Google로 로그인",
+                role = Role.Button,
                 onClick = onClick
             )
     ) {
         Image(
             painterResource(R.drawable.google_icon),
-            "",
+            null,
             Modifier
-                .padding(start = 25.dp)
+                .padding(start = 20.dp)
                 .align(Alignment.CenterStart)
         )
-        Text(stringResource(R.string.google_login_button_text), Modifier.align(Alignment.Center))
+        Text(
+            text = stringResource(R.string.google_login_button_text),
+            modifier = Modifier.align(Alignment.Center),
+            style = StarSnapTypography.label.copy(fontWeight = FontWeight.SemiBold),
+        )
     }
 }
 
 @Composable
 fun SubmitButton(onClick: () -> Unit, buttonText: String, enabled: Boolean) {
-    val buttonBackground = if (enabled) yellow_400 else yellow_100
+    val buttonBackground = if (enabled) StarSnapColor.brand else StarSnapColor.brandSoft
+    val buttonTextColor = if (enabled) StarSnapColor.onBrand else StarSnapColor.textMuted
 
     Box(
         Modifier
-            .height(50.dp)
+            .height(DefaultButtonHeight)
             .width(90.dp)
-            .background(buttonBackground, RoundedCornerShape(size = 8.dp))
-            .padding(horizontal = 10.dp)
+            .background(buttonBackground, ButtonShape)
             .clickableSingle(
                 enabled = enabled,
+                onClickLabel = buttonText,
+                role = Role.Button,
                 onClick = onClick,
             )
+            .padding(horizontal = 12.dp)
     ) {
-        Text(buttonText, Modifier.align(Alignment.Center), style = title2)
+        Text(
+            buttonText,
+            Modifier.align(Alignment.Center),
+            style = StarSnapTypography.label.copy(
+                color = buttonTextColor,
+                fontWeight = FontWeight.Bold,
+            ),
+        )
     }
 }
 
 @Composable
 fun NextButton(event: () -> Unit, enabled: Boolean, buttonText: String) {
-    val targetColor = if (enabled) yellow_400 else yellow_100
+    val targetColor = if (enabled) StarSnapColor.brand else StarSnapColor.brandSoft
+    val buttonTextColor = if (enabled) StarSnapColor.onBrand else StarSnapColor.textMuted
     val buttonBackground by animateColorAsState(
         targetValue = targetColor,
-        animationSpec = tween(durationMillis = 150), label = "" // 300ms 애니메이션
+        animationSpec = tween(durationMillis = 150),
+        label = "next_button_background",
     )
 
     Box(
         Modifier
             .clickableSingle(
                 enabled = enabled,
+                onClickLabel = buttonText,
+                role = Role.Button,
                 onClick = event,
             )
-            .height(60.dp)
+            .height(DefaultButtonHeight)
             .fillMaxWidth()
-            .background(buttonBackground)
+            .background(buttonBackground, ButtonShape)
     ) {
         Text(
             text = buttonText,
             modifier = Modifier.align(Alignment.Center),
-            style = TitleLarge
+            style = StarSnapTypography.label.copy(
+                color = buttonTextColor,
+                fontWeight = FontWeight.Bold,
+            ),
         )
     }
 }
 
 @Composable
-fun LikeIconButton() {
-    var isChecked by remember { mutableStateOf(false) }
-
-    IconToggleButton(checked = isChecked, onCheckedChange = { isChecked = it }) {
+fun LikeIconButton(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+) {
+    IconToggleButton(
+        checked = checked,
+        enabled = enabled,
+        onCheckedChange = onCheckedChange,
+        modifier = Modifier.size(48.dp),
+    ) {
         Icon(
-            imageVector = if (isChecked) ImageVector.vectorResource(id = R.drawable.like_true_icon) else ImageVector.vectorResource(id = R.drawable.like_false_icon),
-            contentDescription = "Toggle Favorite"
+            imageVector = if (checked) ImageVector.vectorResource(id = R.drawable.like_true_icon) else ImageVector.vectorResource(id = R.drawable.like_false_icon),
+            contentDescription = if (checked) "좋아요 취소" else "좋아요",
+            modifier = Modifier.size(20.dp),
+            tint = if (checked) StarSnapColor.danger else StarSnapColor.textSubtle,
         )
     }
 }
 
 @Composable
 fun CommentIconButton() {
-    IconButton(onClick = { /* 클릭 이벤트 */ }) {
-        Icon(imageVector = ImageVector.vectorResource(id = R.drawable.comment_icon), contentDescription = "Favorite")
+    IconButton(onClick = { /* 클릭 이벤트 */ }, modifier = Modifier.size(48.dp)) {
+        Icon(
+            imageVector = ImageVector.vectorResource(id = R.drawable.comment_icon),
+            contentDescription = "댓글",
+            modifier = Modifier.size(20.dp),
+            tint = StarSnapColor.textSubtle,
+        )
     }
 }
 
 @Composable
 fun SaveIconButton() {
-    IconButton(onClick = { /* 클릭 이벤트 */ }) {
-        Icon(imageVector = ImageVector.vectorResource(id = R.drawable.save_icon), contentDescription = "Favorite")
+    IconButton(onClick = { /* 클릭 이벤트 */ }, modifier = Modifier.size(48.dp)) {
+        Icon(
+            imageVector = ImageVector.vectorResource(id = R.drawable.save_icon),
+            contentDescription = "저장",
+            modifier = Modifier.size(20.dp),
+            tint = StarSnapColor.textSubtle,
+        )
     }
 }

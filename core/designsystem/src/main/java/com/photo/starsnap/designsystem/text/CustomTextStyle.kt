@@ -1,5 +1,8 @@
 package com.photo.starsnap.designsystem.text
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import com.photo.starsnap.designsystem.StarSnapColor
 
@@ -8,36 +11,53 @@ import com.photo.starsnap.designsystem.StarSnapColor
  * New UI should use [StarSnapTypography] and [StarSnapFontSize].
  */
 object CustomTextStyle {
-    val TitleLarge = StarSnapTypography.heading
-    val TitleMedium = StarSnapTypography.body.copy(fontWeight = FontWeight.SemiBold)
-    val TitleSmall = StarSnapTypography.label.copy(fontWeight = FontWeight.SemiBold)
+    val TitleLarge: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.heading
+    val TitleMedium: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.body.copy(fontWeight = FontWeight.SemiBold)
+    val TitleSmall: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.label.copy(fontWeight = FontWeight.SemiBold)
 
-    val title1 = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
-    val title2 = StarSnapTypography.label
-    val title3 = StarSnapTypography.caption
-    val title4 = StarSnapTypography.caption.copy(
-        fontWeight = FontWeight.Normal,
-        color = StarSnapColor.textMuted,
-    )
-    val title5 = StarSnapTypography.label.copy(fontSize = StarSnapFontSize.label)
-    val title6 = StarSnapTypography.micro.copy(color = StarSnapColor.textSubtle)
-    val title7 = StarSnapTypography.micro.copy(color = StarSnapColor.textSoft)
-    val title8 = StarSnapTypography.micro.copy(fontWeight = FontWeight.SemiBold)
-    val title9 = StarSnapTypography.body.copy(
-        fontWeight = FontWeight.Medium,
-        color = StarSnapColor.textSubtle,
-    )
+    val title1: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
+    val title2: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.label
+    val title3: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.caption
+    val title4: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.caption.copy(
+            fontWeight = FontWeight.Normal,
+            color = StarSnapColor.textMuted,
+        )
+    val title5: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.label.copy(fontSize = StarSnapFontSize.label)
+    val title6: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.micro.copy(color = StarSnapColor.textSubtle)
+    val title7: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.micro.copy(color = StarSnapColor.textSoft)
+    val title8: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.micro.copy(fontWeight = FontWeight.SemiBold)
+    val title9: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.body.copy(
+            fontWeight = FontWeight.Medium,
+            color = StarSnapColor.textSubtle,
+        )
 
-    val body1 = StarSnapTypography.bodySmall.copy(fontWeight = FontWeight.Medium)
-    val hint2 = StarSnapTypography.label.copy(
-        fontSize = StarSnapFontSize.label,
-        color = StarSnapColor.textMuted,
-    )
-    val hint1 = StarSnapTypography.bodySmall.copy(
-        fontWeight = FontWeight.Medium,
-        color = StarSnapColor.textMuted,
-    )
+    val body1: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.bodySmall.copy(fontWeight = FontWeight.Medium)
+    val hint2: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.label.copy(
+            fontSize = StarSnapFontSize.label,
+            color = StarSnapColor.textMuted,
+        )
+    val hint1: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.bodySmall.copy(
+            fontWeight = FontWeight.Medium,
+            color = StarSnapColor.textMuted,
+        )
 
-    val TopBarTitle = StarSnapTypography.title
-    val SignupTitle = StarSnapTypography.displayLarge
+    val TopBarTitle: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.title
+    val SignupTitle: TextStyle
+        @Composable @ReadOnlyComposable get() = StarSnapTypography.displayLarge
 }

@@ -1,19 +1,32 @@
 package com.photo.starsnap.designsystem
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.graphics.Color
+
 /**
  * Backward-compatible aliases for screens that still use the original token names.
  * New UI should use [StarSnapColor] directly.
  */
 object CustomColor {
-    val ink = StarSnapColor.text
-    val inkSoft = StarSnapColor.textSoft
-    val sub = StarSnapColor.textSubtle
-    val muted = StarSnapColor.textMuted
-    val line = StarSnapColor.border
-    val placeholder = StarSnapColor.surfaceSubtle
-    val brand = StarSnapColor.brand
-    val brandSoft = StarSnapColor.brandSoft
-    val danger = StarSnapColor.danger
+    val ink: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.text
+    val inkSoft: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.textSoft
+    val sub: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.textSubtle
+    val muted: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.textMuted
+    val line: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.border
+    val placeholder: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.surfaceSubtle
+    val brand: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.brand
+    val brandSoft: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.brandSoft
+    val danger: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.danger
 
     val yellow_50 = StarSnapColor.yellow50
     val yellow_100 = StarSnapColor.yellow100
@@ -26,20 +39,34 @@ object CustomColor {
     val yellow_800 = StarSnapColor.yellow800
     val yellow_900 = StarSnapColor.yellow800
 
-    val light_black = StarSnapColor.text
-    val title = StarSnapColor.textSoft
-    val sub_title = StarSnapColor.textSubtle
-    val gray = StarSnapColor.textMuted
-    val light_gray = StarSnapColor.borderStrong
-    val button = StarSnapColor.borderStrong
-    val container = StarSnapColor.surfaceSubtle
+    val light_black: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.text
+    val title: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.textSoft
+    val sub_title: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.textSubtle
+    val gray: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.textMuted
+    val light_gray: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.borderStrong
+    val button: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.borderStrong
+    val container: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.surfaceSubtle
 
-    val error = StarSnapColor.danger
-    val success = StarSnapColor.success
+    val error: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.danger
+    val success: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.success
 
-    val background = StarSnapColor.canvas
-    val surface = StarSnapColor.surface
-    val border = StarSnapColor.border
-    val primary = StarSnapColor.brand
-    val primarySoft = StarSnapColor.brandSoft
+    val background: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.canvas
+    val surface: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.surface
+    val border: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.border
+    val primary: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.brand
+    val primarySoft: Color
+        @Composable @ReadOnlyComposable get() = StarSnapColor.brandSoft
 }

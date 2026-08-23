@@ -1,10 +1,10 @@
 // AUTO-GENERATED from /starsnap-main/starsnap-web/design-system/tokens.json. Do not edit directly.
 package com.photo.starsnap.designsystem.text
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.photo.starsnap.designsystem.StarSnapColor
 
 object StarSnapFontSize {
     val micro = 10.sp
@@ -26,7 +26,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.Bold,
         fontSize = StarSnapFontSize.threeXl,
         lineHeight = 36.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val headingLarge = TextStyle(
@@ -34,7 +34,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.Bold,
         fontSize = StarSnapFontSize.twoXl,
         lineHeight = 31.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val heading = TextStyle(
@@ -42,7 +42,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.SemiBold,
         fontSize = StarSnapFontSize.xl,
         lineHeight = 28.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val title = TextStyle(
@@ -50,7 +50,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.SemiBold,
         fontSize = StarSnapFontSize.lg,
         lineHeight = 25.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val body = TextStyle(
@@ -58,7 +58,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.Normal,
         fontSize = StarSnapFontSize.base,
         lineHeight = 24.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val bodySmall = TextStyle(
@@ -66,7 +66,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.Normal,
         fontSize = StarSnapFontSize.bodySm,
         lineHeight = 22.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val label = TextStyle(
@@ -74,7 +74,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.Medium,
         fontSize = StarSnapFontSize.sm,
         lineHeight = 20.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val caption = TextStyle(
@@ -82,7 +82,7 @@ object StarSnapTypography {
         fontWeight = FontWeight.Medium,
         fontSize = StarSnapFontSize.xs,
         lineHeight = 18.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 
     val micro = TextStyle(
@@ -90,6 +90,6 @@ object StarSnapTypography {
         fontWeight = FontWeight.Medium,
         fontSize = StarSnapFontSize.micro,
         lineHeight = 14.sp,
-        color = StarSnapColor.text,
+        color = Color.Unspecified,
     )
 }

@@ -9,11 +9,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import com.photo.starsnap.designsystem.text.CustomTextStyle.hint1
-import com.photo.starsnap.designsystem.CustomColor.error
-import com.photo.starsnap.designsystem.CustomColor.success
-import com.photo.starsnap.designsystem.CustomColor.gray
 import com.photo.starsnap.designsystem.R
+import com.photo.starsnap.designsystem.StarSnapColor
+import com.photo.starsnap.designsystem.text.StarSnapTypography
 import com.photo.starsnap.main.viewmodel.auth.PasswordState
 import com.photo.starsnap.main.viewmodel.auth.SignupViewModel
 import com.photo.starsnap.main.viewmodel.auth.ValidState
@@ -21,7 +19,10 @@ import com.photo.starsnap.main.viewmodel.auth.VerifyCodeState
 
 @Composable
 fun TextEditHint(text: String) {
-    Text(text, style = hint1)
+    Text(
+        text = text,
+        style = StarSnapTypography.label.copy(color = StarSnapColor.textMuted),
+    )
 }
 
 // 닉네임 유효성 검사
@@ -31,32 +32,32 @@ fun CheckUserNameStatusMessage(viewModel: SignupViewModel) {
     val message = when (uiState.usernameValidState) {
         ValidState.ERROR -> MessageState(
             stringResource(R.string.signup_username_screen_error_message),
-            error
+            StarSnapColor.danger
         )
 
         ValidState.EXIST -> MessageState(
             stringResource(R.string.signup_username_screen_exist_message),
-            error
+            StarSnapColor.danger
         )
 
         ValidState.SUCCESS -> MessageState(
             stringResource(R.string.signup_username_screen_success_message),
-            success
+            StarSnapColor.success
         )
 
         ValidState.LOADING -> MessageState(
             stringResource(R.string.signup_username_screen_loading_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         ValidState.DEFAULT -> MessageState(
             stringResource(R.string.signup_username_screen_default_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         ValidState.INTERNET_ERROR -> MessageState(
             stringResource(R.string.internet_error),
-            error
+            StarSnapColor.danger
         )
     }
 
@@ -81,22 +82,26 @@ fun CheckPasswordStatusMessage(viewModel: SignupViewModel) {
     val message = when (uiState.passwordValidState) {
         PasswordState.ERROR -> MessageState(
             stringResource(R.string.signup_password_screen_error_message),
-            error
+            StarSnapColor.danger
         )
 
         PasswordState.SUCCESS -> MessageState(
             stringResource(R.string.signup_password_screen_success_message),
-            success
+            StarSnapColor.success
         )
 
         PasswordState.DEFAULT -> MessageState(
             stringResource(R.string.signup_password_screen_default_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         PasswordState.INVALID_CONFIRM -> MessageState(
             stringResource(R.string.signup_password_screen_mismatch_message),
-            error
+            StarSnapColor.danger
+        )
+        PasswordState.CONFIRM_EMPTY -> MessageState(
+            stringResource(R.string.signup_password_screen_confirm_empty_message),
+            StarSnapColor.danger
         )
     }
 
@@ -110,7 +115,7 @@ fun CheckPasswordStatusMessage(viewModel: SignupViewModel) {
     Crossfade(
         targetState = message.text, animationSpec = tween(durationMillis = 300), label = ""
     ) { animatedText ->
-        SignupStateMessage(animatedText, animatedColor)
+        SignupStateMessage(animatedText, animatedColor, minLines = 2)
     }
 }
 
@@ -121,32 +126,32 @@ fun CheckEmailStatusMessage(viewModel: SignupViewModel) {
     val message = when (uiState.emailValidState) {
         ValidState.ERROR -> MessageState(
             stringResource(R.string.signup_email_screen_error_message),
-            error
+            StarSnapColor.danger
         )
 
         ValidState.EXIST -> MessageState(
             stringResource(R.string.signup_email_screen_exist_message),
-            error
+            StarSnapColor.danger
         )
 
         ValidState.SUCCESS -> MessageState(
             stringResource(R.string.signup_email_screen_success_message),
-            success
+            StarSnapColor.success
         )
 
         ValidState.LOADING -> MessageState(
             stringResource(R.string.signup_email_screen_loading_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         ValidState.DEFAULT -> MessageState(
             stringResource(R.string.signup_email_screen_default_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         ValidState.INTERNET_ERROR -> MessageState(
             stringResource(R.string.internet_error),
-            error
+            StarSnapColor.danger
         )
     }
 
@@ -172,32 +177,32 @@ fun CheckVerifyCodeStatusMessage(viewModel: SignupViewModel) {
     val message = when (uiState.verifyCodeState) {
         VerifyCodeState.ERROR -> MessageState(
             stringResource(R.string.signup_verify_screen_error_message),
-            error
+            StarSnapColor.danger
         )
 
         VerifyCodeState.SUCCESS -> MessageState(
             stringResource(R.string.signup_verify_screen_success_message),
-            success
+            StarSnapColor.success
         )
 
         VerifyCodeState.LOADING -> MessageState(
             stringResource(R.string.signup_verify_screen_loading_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         VerifyCodeState.DEFAULT -> MessageState(
             stringResource(R.string.signup_verify_screen_default_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         VerifyCodeState.RESEND -> MessageState(
             stringResource(R.string.signup_verify_screen_resend_message),
-            gray
+            StarSnapColor.textMuted
         )
 
         VerifyCodeState.INTERNET_ERROR -> MessageState(
             stringResource(R.string.internet_error),
-            error
+            StarSnapColor.danger
         )
     }
 
@@ -216,8 +221,13 @@ fun CheckVerifyCodeStatusMessage(viewModel: SignupViewModel) {
 }
 
 @Composable
-fun SignupStateMessage(text: String, color: Color) {
-    Text(text, style = hint1, color = color)
+fun SignupStateMessage(text: String, color: Color, minLines: Int = 1) {
+    Text(
+        text = text,
+        style = StarSnapTypography.label,
+        color = color,
+        minLines = minLines,
+    )
 }
 
 
