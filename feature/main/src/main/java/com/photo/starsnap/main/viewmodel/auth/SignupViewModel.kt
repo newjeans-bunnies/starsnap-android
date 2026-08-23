@@ -278,6 +278,7 @@ class SignupViewModel @Inject constructor(
         val passwordState = when {
             password.isEmpty() -> PasswordState.DEFAULT
             !isPasswordValid -> PasswordState.ERROR
+            confirmPassword.isEmpty() -> PasswordState.CONFIRM_EMPTY
             password != confirmPassword -> PasswordState.INVALID_CONFIRM
             else -> PasswordState.SUCCESS
         }
@@ -386,6 +387,7 @@ enum class PasswordState {
     SUCCESS,          // 비밀번호 정규식 일치 + 비밀번호 확인과 동일
     ERROR,            // 비밀번호 정규식 불일치
     DEFAULT,          // 비밀번호 미입력
+    CONFIRM_EMPTY,    // 비밀번호 확인 미입력
     INVALID_CONFIRM   // 비밀번호 정규식은 일치하지만 비밀번호 확인이 없거나 다를 때
 }
 

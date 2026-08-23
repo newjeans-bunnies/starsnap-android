@@ -1,12 +1,7 @@
 package com.photo.starsnap.main.ui.screen.auth.signup
 
-import android.util.Log
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,11 +10,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.photo.starsnap.designsystem.R
-import com.photo.starsnap.designsystem.text.CustomTextStyle.SignupTitle
 import com.photo.starsnap.main.ui.component.BaseEditText
 import com.photo.starsnap.main.ui.component.CheckUserNameStatusMessage
-import com.photo.starsnap.main.ui.component.NextButton
-import com.photo.starsnap.main.ui.component.TopAppBar
+import com.photo.starsnap.main.ui.screen.auth.AuthFieldLabel
 import com.photo.starsnap.main.utils.EditTextType
 import com.photo.starsnap.main.utils.NavigationRoute.SIGNUP_PASSWORD
 import com.photo.starsnap.main.viewmodel.auth.SignupViewModel
@@ -28,50 +21,29 @@ import com.photo.starsnap.main.viewmodel.auth.SignupViewModel
 fun UserNameSignupScreen(
     viewModel: SignupViewModel,
     navController: NavController,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
 ) {
-
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = stringResource(R.string.signup_top_bar_title),
-                onBack = {
-                    Log.d("SignupBack", "click_back:UserNameSignupScreen")
-                    onNavigateToLogin()
-                }
-            )
-        },
-        bottomBar = {
-            // 다음 버튼
-            NextButton(
-                event = {
-                    navController.navigate(SIGNUP_PASSWORD)
-                },
-                buttonText = "다음",
-                enabled = uiState.usernameButtonState
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 35.dp)
-                .padding(innerPadding)
-        ) {
-            Text(
-                stringResource(R.string.signup_username_screen_title),
-                style = SignupTitle,
-                modifier = Modifier.padding(top = 30.dp, bottom = 13.dp)
-            )
-
-            CheckUserNameStatusMessage(viewModel)
-
-            Spacer(Modifier.height(55.dp))
-
-            BaseEditText(viewModel.username, "아이디", { viewModel.username = it }, EditTextType.Text)
-
-            Spacer(Modifier.weight(1F))
-        }
+    SignupStepLayout(
+        step = 1,
+        label = "아이디",
+        title = stringResource(R.string.signup_username_screen_title),
+        description = "StarSnap에서 사용할 아이디를 입력해 주세요.",
+        primaryText = "다음",
+        primaryEnabled = uiState.usernameButtonState,
+        onPrimary = { navController.navigate(SIGNUP_PASSWORD) },
+        onBack = onNavigateToLogin,
+        backText = "로그인으로 돌아가기",
+    ) {
+        AuthFieldLabel(text = "아이디")
+        BaseEditText(
+            defaultText = viewModel.username,
+            hint = "아이디",
+            inputText = { viewModel.username = it },
+            editTextType = EditTextType.Text,
+        )
+        Spacer(Modifier.height(8.dp))
+        CheckUserNameStatusMessage(viewModel)
     }
 }
