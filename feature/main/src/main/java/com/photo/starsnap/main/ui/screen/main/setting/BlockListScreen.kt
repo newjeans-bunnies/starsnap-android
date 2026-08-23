@@ -1,28 +1,30 @@
 package com.photo.starsnap.main.ui.screen.main.setting
 
 import android.util.Log
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavController
-import com.photo.starsnap.designsystem.R
-import com.photo.starsnap.main.ui.component.TopAppBar
 
 @Composable
 fun BlockListScreen(navController: NavController) {
-    Log.d("화면", "BlockListScreen")
+    LaunchedEffect(Unit) {
+        Log.d("화면", "BlockListScreen")
+    }
 
-    Scaffold(topBar = {
-        TopAppBar(
-            title = stringResource(R.string.black_list_top_app_bar_title),
-            onBack = { navController.popBackStack() }
-        )
-    }) { padding ->
-        Column(Modifier.padding(padding)) {
-
+    SettingPageScaffold(
+        title = "차단 사용자 관리",
+        onBack = { navController.popBackStack() },
+    ) {
+        item {
+            SettingEmptyState(
+                title = "차단한 사용자가 없습니다",
+                description = "차단한 사용자는 검색과 메시지에서 서로 표시되지 않아요.",
+            )
+        }
+        item {
+            SettingInfoBanner(
+                text = "사용자 프로필의 더보기 메뉴에서 차단하거나 차단을 해제할 수 있어요.",
+            )
         }
     }
 }

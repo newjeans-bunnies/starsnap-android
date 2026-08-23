@@ -22,7 +22,7 @@ fun UserRoute(navController: NavController, userViewModel: UserViewModel) {
             ProfileScreen(navController, userViewModel)
         }
         composable(NavigationRoute.SETTING_ROUTE) {
-            SettingScreen(navController)
+            SettingScreen(navController, userViewModel)
         }
     }
 }

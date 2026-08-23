@@ -1,30 +1,31 @@
 package com.photo.starsnap.main.ui.screen.main.setting
 
 import android.util.Log
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
-import com.photo.starsnap.designsystem.R
-import com.photo.starsnap.main.ui.component.TopAppBar
 
 @Composable
 fun SaveListScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         Log.d("화면", "SaveListScreen")
     }
-    Scaffold(topBar = {
-        TopAppBar(
-            title = stringResource(R.string.save_list_top_app_bar_title),
-            onBack = { navController.popBackStack() }
-        )
-    }) { padding ->
-        Column(Modifier.padding(padding)) {
 
+    SettingPageScaffold(
+        title = "저장한 스냅",
+        onBack = { navController.popBackStack() },
+    ) {
+        item {
+            SettingEmptyState(
+                title = "저장한 스냅을 프로필에서 확인하세요",
+                description = "프로필의 ‘저장됨’ 탭에서 저장한 스냅을 한눈에 볼 수 있어요.",
+            )
+        }
+        item {
+            SettingPrimaryButton(
+                text = "프로필로 이동",
+                onClick = { navController.navigate("profile") },
+            )
         }
     }
 }
