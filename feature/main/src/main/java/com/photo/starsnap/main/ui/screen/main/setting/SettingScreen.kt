@@ -69,9 +69,13 @@ fun SettingScreen(
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) alarmSettingViewModel.setPushNotificationsEnabled(true)
-    }
+        onResult = alarmSettingViewModel::onNotificationPermissionResult,
+    )
+
+    SyncNotificationPermissionOnResume(
+        viewModel = alarmSettingViewModel,
+        preferenceConfigured = alarmUiState.preferenceConfigured,
+    )
 
     fun updatePushNotifications(enabled: Boolean) {
         if (!enabled) {

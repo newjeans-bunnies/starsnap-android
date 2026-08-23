@@ -23,14 +23,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.photo.starsnap.designsystem.StarSnapColor
-import com.photo.starsnap.datastore.FcmTokenStore
 import com.photo.starsnap.main.ui.component.BottomNavigation
 import com.photo.starsnap.main.ui.component.StarSnapAppBar
 import com.photo.starsnap.main.route.bottom_nav_route.HomeRoute
 import com.photo.starsnap.main.route.bottom_nav_route.StarHubRoute
 import com.photo.starsnap.main.ui.screen.main.profile.ProfileScreen
 import com.photo.starsnap.main.ui.screen.main.search.SearchScreen
+import com.photo.starsnap.main.ui.screen.main.setting.AlarmSettingViewModel
+import com.photo.starsnap.main.ui.screen.main.setting.SyncNotificationPermissionOnResume
 import com.photo.starsnap.main.utils.BottomNavItem
 import com.photo.starsnap.main.utils.NavigationRoute.FIX_PROFILE
 import com.photo.starsnap.main.utils.NavigationRoute.HOME_ROUTE
@@ -49,32 +52,40 @@ fun MainScreen(
     snapViewModel: SnapViewModel,
     userViewModel: UserViewModel,
     starViewModel: StarViewModel,
-    onNavigate: (String) -> Unit
+    alarmSettingViewModel: AlarmSettingViewModel = hiltViewModel(),
+    onNavigate: (String) -> Unit,
 ) {
     val context = LocalContext.current
-    val pushNotificationsEnabled = remember {
-        FcmTokenStore(context).arePushNotificationsEnabled()
-    }
+    val alarmUiState by alarmSettingViewModel.uiState.collectAsStateWithLifecycle()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = {},
+        onResult = alarmSettingViewModel::onNotificationPermissionResult,
     )
 
     LaunchedEffect(Unit) {
         Log.d("화면", "MainScreen")
         userViewModel.getUserData()
+    }
 
-        if (
-            pushNotificationsEnabled &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(
+    LaunchedEffect(alarmUiState.preferenceConfigured) {
+        if (!alarmUiState.preferenceConfigured) {
+            val permissionGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                ) == PackageManager.PERMISSION_GRANTED
+            if (permissionGranted) {
+                alarmSettingViewModel.onNotificationPermissionResult(true)
+            } else {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
     }
+
+    SyncNotificationPermissionOnResume(
+        viewModel = alarmSettingViewModel,
+        preferenceConfigured = alarmUiState.preferenceConfigured,
+    )
 
     val bottomNavItems = remember {
         listOf(

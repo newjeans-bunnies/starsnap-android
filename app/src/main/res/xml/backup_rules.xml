@@ -2,4 +2,6 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="cookie_store.xml" />
     <exclude domain="sharedpref" path="starsnap_fcm_state.xml" />
+    <!-- Includes Firebase PersistedInstallation.*.json identifiers. -->
+    <exclude domain="file" path="." />
 </full-backup-content>

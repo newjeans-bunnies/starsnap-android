@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "478568032754",
+    "project_id": "starsnap-9fc9f",
+    "storage_bucket": "starsnap-9fc9f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478568032754:android:462a1ecc734a5febaa236b",
+        "android_client_info": {
+          "package_name": "com.photo.starsnap.main"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwrUcT2NuPWix_3BJ8PAITh3n3IY2WZVI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

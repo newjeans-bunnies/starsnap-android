@@ -24,8 +24,14 @@ class FcmTokenStore @Inject constructor(
 
     fun isAuthenticated(): Boolean = preferences.getBoolean(AUTHENTICATED, false)
 
+    fun hasPushNotificationsPreference(): Boolean =
+        preferences.contains(PUSH_NOTIFICATIONS_ENABLED)
+
     fun arePushNotificationsEnabled(): Boolean =
-        preferences.getBoolean(PUSH_NOTIFICATIONS_ENABLED, true)
+        preferences.getBoolean(PUSH_NOTIFICATIONS_ENABLED, false)
+
+    fun werePushNotificationsDisabledBySystem(): Boolean =
+        preferences.getBoolean(PUSH_NOTIFICATIONS_DISABLED_BY_SYSTEM, false)
 
     fun isTokenRemovalPending(): Boolean =
         preferences.getBoolean(TOKEN_REMOVAL_PENDING, false)
@@ -37,7 +43,21 @@ class FcmTokenStore @Inject constructor(
 
     @Synchronized
     fun setPushNotificationsEnabled(enabled: Boolean) {
-        preferences.edit().putBoolean(PUSH_NOTIFICATIONS_ENABLED, enabled).commit()
+        preferences.edit()
+            .putBoolean(PUSH_NOTIFICATIONS_ENABLED, enabled)
+            .remove(PUSH_NOTIFICATIONS_DISABLED_BY_SYSTEM)
+            .commit()
+    }
+
+    @Synchronized
+    fun setPushNotificationsPermissionResult(granted: Boolean) {
+        val editor = preferences.edit().putBoolean(PUSH_NOTIFICATIONS_ENABLED, granted)
+        if (granted) {
+            editor.remove(PUSH_NOTIFICATIONS_DISABLED_BY_SYSTEM)
+        } else {
+            editor.putBoolean(PUSH_NOTIFICATIONS_DISABLED_BY_SYSTEM, true)
+        }
+        editor.commit()
     }
 
     @Synchronized
@@ -67,6 +87,8 @@ class FcmTokenStore @Inject constructor(
         const val PENDING_TOKEN = "pending_token"
         const val AUTHENTICATED = "authenticated"
         const val PUSH_NOTIFICATIONS_ENABLED = "push_notifications_enabled"
+        const val PUSH_NOTIFICATIONS_DISABLED_BY_SYSTEM =
+            "push_notifications_disabled_by_system"
         const val TOKEN_REMOVAL_PENDING = "token_removal_pending"
     }
 }

@@ -10,6 +10,7 @@ import javax.inject.Inject
 
 data class AlarmSettingUiState(
     val pushNotificationsEnabled: Boolean,
+    val preferenceConfigured: Boolean,
 )
 
 @HiltViewModel
@@ -19,12 +20,30 @@ class AlarmSettingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         AlarmSettingUiState(
             pushNotificationsEnabled = fcmTokenSyncer.arePushNotificationsEnabled(),
+            preferenceConfigured = fcmTokenSyncer.hasPushNotificationsPreference(),
         ),
     )
     val uiState: StateFlow<AlarmSettingUiState> = _uiState.asStateFlow()
 
     fun setPushNotificationsEnabled(enabled: Boolean) {
         fcmTokenSyncer.setPushNotificationsEnabled(enabled)
-        _uiState.value = AlarmSettingUiState(pushNotificationsEnabled = enabled)
+        updateUiState()
+    }
+
+    fun onNotificationPermissionResult(granted: Boolean) {
+        fcmTokenSyncer.onNotificationPermissionResult(granted)
+        updateUiState()
+    }
+
+    fun reconcileNotificationPermission(granted: Boolean) {
+        fcmTokenSyncer.reconcileNotificationPermission(granted)
+        updateUiState()
+    }
+
+    private fun updateUiState() {
+        _uiState.value = AlarmSettingUiState(
+            pushNotificationsEnabled = fcmTokenSyncer.arePushNotificationsEnabled(),
+            preferenceConfigured = fcmTokenSyncer.hasPushNotificationsPreference(),
+        )
     }
 }

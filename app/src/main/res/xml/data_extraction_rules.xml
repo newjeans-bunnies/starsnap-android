@@ -3,9 +3,12 @@
     <cloud-backup>
         <exclude domain="sharedpref" path="cookie_store.xml" />
         <exclude domain="sharedpref" path="starsnap_fcm_state.xml" />
+        <!-- Do not restore Firebase installation identifiers on another device. -->
+        <exclude domain="file" path="." />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="cookie_store.xml" />
         <exclude domain="sharedpref" path="starsnap_fcm_state.xml" />
+        <exclude domain="file" path="." />
     </device-transfer>
 </data-extraction-rules>

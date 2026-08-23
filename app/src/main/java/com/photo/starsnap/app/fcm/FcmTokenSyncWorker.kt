@@ -66,10 +66,12 @@ class FcmTokenSyncWorker(
     }
 
     private fun handleHttpError(error: HttpException, tokenStore: FcmTokenStore): Result = when {
-        error.code() == 401 || error.code() == 403 -> {
+        error.code() == 401 -> {
             tokenStore.setAuthenticated(false)
             Result.success()
         }
+        // A forbidden token update does not prove that the login session is invalid.
+        error.code() == 403 -> Result.failure()
         error.code() == 408 || error.code() == 429 || error.code() >= 500 -> Result.retry()
         else -> Result.failure()
     }

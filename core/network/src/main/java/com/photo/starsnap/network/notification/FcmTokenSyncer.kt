@@ -16,8 +16,17 @@ interface FcmTokenSyncer {
     /** Returns the user's durable in-app push preference. */
     fun arePushNotificationsEnabled(): Boolean
 
+    /** Returns whether the initial notification permission/preference has been resolved. */
+    fun hasPushNotificationsPreference(): Boolean
+
     /** Applies the preference locally and schedules server registration or removal. */
     fun setPushNotificationsEnabled(enabled: Boolean)
+
+    /** Applies the result of an Android notification permission request. */
+    fun onNotificationPermissionResult(granted: Boolean)
+
+    /** Reconciles a later permission change without overriding an explicit user opt-out. */
+    fun reconcileNotificationPermission(granted: Boolean)
 
     /** Prevents background work from calling protected APIs after session loss. */
     fun onSignedOut()

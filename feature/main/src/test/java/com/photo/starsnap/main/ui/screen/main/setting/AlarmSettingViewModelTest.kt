@@ -16,6 +16,7 @@ class AlarmSettingViewModelTest {
         viewModel.setPushNotificationsEnabled(false)
 
         assertFalse(viewModel.uiState.value.pushNotificationsEnabled)
+        assertTrue(viewModel.uiState.value.preferenceConfigured)
         assertFalse(syncer.enabled)
     }
 
@@ -23,6 +24,7 @@ class AlarmSettingViewModelTest {
         initiallyEnabled: Boolean,
     ) : FcmTokenSyncer {
         var enabled = initiallyEnabled
+        var configured = true
 
         override fun onAuthenticated() = Unit
 
@@ -30,9 +32,19 @@ class AlarmSettingViewModelTest {
 
         override fun arePushNotificationsEnabled(): Boolean = enabled
 
+        override fun hasPushNotificationsPreference(): Boolean = configured
+
         override fun setPushNotificationsEnabled(enabled: Boolean) {
             this.enabled = enabled
+            configured = true
         }
+
+        override fun onNotificationPermissionResult(granted: Boolean) {
+            enabled = granted
+            configured = true
+        }
+
+        override fun reconcileNotificationPermission(granted: Boolean) = Unit
 
         override fun onSignedOut() = Unit
     }

@@ -49,8 +49,29 @@ internal class FirebaseFcmTokenSyncer @Inject constructor(
     override fun arePushNotificationsEnabled(): Boolean =
         tokenStore.arePushNotificationsEnabled()
 
+    override fun hasPushNotificationsPreference(): Boolean =
+        tokenStore.hasPushNotificationsPreference()
+
     override fun setPushNotificationsEnabled(enabled: Boolean) {
         tokenStore.setPushNotificationsEnabled(enabled)
+        applyPushNotificationsEnabled(enabled)
+    }
+
+    override fun onNotificationPermissionResult(granted: Boolean) {
+        tokenStore.setPushNotificationsPermissionResult(granted)
+        applyPushNotificationsEnabled(granted)
+    }
+
+    override fun reconcileNotificationPermission(granted: Boolean) {
+        val shouldApply = if (granted) {
+            tokenStore.werePushNotificationsDisabledBySystem()
+        } else {
+            tokenStore.arePushNotificationsEnabled()
+        }
+        if (shouldApply) onNotificationPermissionResult(granted)
+    }
+
+    private fun applyPushNotificationsEnabled(enabled: Boolean) {
 
         if (enabled) {
             tokenStore.clearTokenRemovalPending()
