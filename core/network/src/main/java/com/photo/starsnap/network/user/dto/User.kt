@@ -6,6 +6,6 @@ data class GetUserRequest(
     val email: String,
     val profileImageUrl: String? = null,
     val authority: String,
-    val followingCount: Int,
-    val followerCount: Int
+    val friendCount: Int,
+    val isPrivate: Boolean = false
 )
