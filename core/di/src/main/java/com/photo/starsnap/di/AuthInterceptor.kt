@@ -1,59 +1,43 @@
 package com.photo.starsnap.di
 
 import android.util.Log
-import com.photo.starsnap.datastore.TokenManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
+import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection.HTTP_OK
 import javax.inject.Inject
 
-class AuthInterceptor @Inject constructor(
-    private val tokenModule: TokenManager
-) : Interceptor {
+class AuthInterceptor @Inject constructor() : Interceptor {
 
     companion object {
         private const val TAG = "AuthInterceptor"
     }
 
     override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request().withCookieOnlyAuthentication()
 
-        if (chain.request().headers["Auth"] == "false") {
-            val newRequest = chain.request().newBuilder().removeHeader("Auth").build()
-            return chain.proceed(newRequest)
+        // Public auth endpoints still use CookieJar when needed, but must never recurse into refresh.
+        if (request.tag(SkipAuthentication::class.java) != null) {
+            Log.d(TAG, "Auth: false request - automatic refresh disabled")
+            return chain.proceed(request)
         }
 
-        var token: String = runBlocking {
-            tokenModule.getAccessToken().first()
-        }
-
-        if (token.isNotEmpty())
-            token = "Bearer $token"
-
-        val request =
-            chain.request().newBuilder().addHeader("Authorization", token).build()
+        // HttpOnly 쿠키는 OkHttpClient의 CookieJar가 자동으로 처리함
+        // Authorization 헤더 추가는 불필요
+        Log.d(TAG, "요청 진행 - HttpOnly 쿠키는 CookieJar가 자동 처리")
 
         val response = chain.proceed(request)
-        if (response.code == HTTP_OK) {
-            val newAccessToken: String = response.header("Authorization", null) ?: return response
-            Log.d(TAG, "new Access Token = $newAccessToken")
 
-            CoroutineScope(Dispatchers.IO).launch {
-                val existedAccessToken: String =
-                    runBlocking { tokenModule.getAccessToken().first() }
-                if (existedAccessToken != newAccessToken) {
-                    tokenModule.saveAccessToken(newAccessToken)
-                    Log.d(TAG, "newAccessToken = ${newAccessToken}\nExistedAccessToken = $existedAccessToken")
-                }
-            }
-        } else {
-            Log.e(TAG, "${response.code} : ${response.request} \n ${response.message}")
+        if (response.code != HTTP_OK) {
+            Log.e(TAG, "Response code: ${response.code} | URL: ${response.request.url}")
         }
 
         return response
     }
 }
+
+internal fun Request.withCookieOnlyAuthentication(): Request =
+    newBuilder()
+        .removeHeader("Authorization")
+        .build()
+        .withAuthenticationRequestTags()

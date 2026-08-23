@@ -15,6 +15,7 @@ interface AuthRepository {
     // ----------------------------------------------------------------
 
     suspend fun login(loginDto: LoginDto): TokenDto
+    suspend fun logout()
     suspend fun signup(signupDto: SignupDto): StatusDto
     suspend fun setPassword(password: String): StatusDto
     suspend fun deleteUser(): StatusDto

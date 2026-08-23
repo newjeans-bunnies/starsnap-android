@@ -45,6 +45,8 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.okhttp)
     implementation(platform(libs.okhttp.bom))
+    // JavaNetCookieJar을 사용하려면 okhttp-urlconnection 모듈이 필요합니다.
+    implementation("com.squareup.okhttp3:okhttp-urlconnection:4.12.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

@@ -6,10 +6,7 @@ import javax.inject.Inject
 class TokenApiRepositoryImpl @Inject constructor(
     private val tokenApi: TokenApi
 ): TokenRepository {
-    override suspend fun reissueToken(
-        refreshToken: String,
-        accessToken: String,
-    ): TokenDto {
-        return tokenApi.reissueToken(refreshToken, accessToken)
+    override suspend fun reissueToken(): TokenDto {
+        return tokenApi.reissueToken()
     }
 }

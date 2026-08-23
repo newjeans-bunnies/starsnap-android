@@ -27,6 +27,10 @@ class AuthApiRepositoryImpl @Inject constructor(
         return authApi.login(loginDto)
     }
 
+    override suspend fun logout() {
+        authApi.logout()
+    }
+
     override suspend fun signup(signupDto: SignupDto): StatusDto {
         return authApi.signup(signupDto)
     }

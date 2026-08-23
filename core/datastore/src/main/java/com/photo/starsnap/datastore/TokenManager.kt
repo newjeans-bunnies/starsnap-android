@@ -1,7 +1,7 @@
 package com.photo.starsnap.datastore
 
 import android.content.Context
-import androidx.datastore.preferences.core.booleanPreferencesKey
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -18,83 +18,50 @@ class TokenManager @Inject constructor(
 ) {
     companion object {
         private const val TAG = "TokenManager"
-        private val ACCESS_TOKEN = stringPreferencesKey("access_token")
-        private val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
-
-        //
+        private const val DATASTORE_NAME = "TOKEN_DATASTORE"
+        private val LEGACY_ACCESS_TOKEN = stringPreferencesKey("access_token")
+        private val LEGACY_REFRESH_TOKEN = stringPreferencesKey("refresh_token")
         private val EXPIRED_AT = stringPreferencesKey("expired_at")
     }
 
-    private val Context.accessTokenDataStore by preferencesDataStore("ACCESS_TOKEN_DATASTORE")
-    private val Context.refreshTokenDataStore by preferencesDataStore("REFRESH_TOKEN_DATASTORE")
-    private val Context.expiredAtDataStore by preferencesDataStore("EXPIRED_AT_DATASTORE")
-
-    suspend fun saveAccessToken(accessToken: String) {
-        context.accessTokenDataStore.edit { prefs ->
-            prefs[ACCESS_TOKEN] = accessToken
-        }
-    }
-
-    suspend fun saveRefreshToken(refreshToken: String) {
-        context.refreshTokenDataStore.edit { prefs ->
-            prefs[REFRESH_TOKEN] = refreshToken
-        }
-    }
+    private val Context.tokenDataStore by preferencesDataStore(DATASTORE_NAME)
 
     suspend fun saveExpiredAt(expiredAt: String) {
-        context.expiredAtDataStore.edit { prefs ->
-            prefs[EXPIRED_AT] = expiredAt
+        try {
+            context.tokenDataStore.edit { prefs ->
+                prefs[EXPIRED_AT] = expiredAt
+                Log.d(TAG, "Expired at saved: $expiredAt")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save expired at", e)
         }
     }
-
 
     suspend fun deleteData() {
-
-        // token
-        context.accessTokenDataStore.edit { prefs -> prefs[ACCESS_TOKEN] = "" }
-        context.refreshTokenDataStore.edit { prefs -> prefs[REFRESH_TOKEN] = "" }
-
-        // expiredAt
-        context.expiredAtDataStore.edit { prefs -> prefs[EXPIRED_AT] = "" }
-    }
-
-
-    fun getAccessToken(): Flow<String> {
-        return context.accessTokenDataStore.data.catch { exception ->
-            if (exception is IOException) {
-                exception.printStackTrace()
-                emit(emptyPreferences())
-            } else {
-                throw exception
+        try {
+            context.tokenDataStore.edit { prefs ->
+                prefs.remove(LEGACY_ACCESS_TOKEN)
+                prefs.remove(LEGACY_REFRESH_TOKEN)
+                prefs.remove(EXPIRED_AT)
+                Log.d(TAG, "Session metadata and legacy tokens cleared")
             }
-        }.map { prefs ->
-            prefs[ACCESS_TOKEN] ?: ""
-        }
-    }
-
-    fun getRefreshToken(): Flow<String> {
-        return context.refreshTokenDataStore.data.catch { exception ->
-            if (exception is IOException) {
-                exception.printStackTrace()
-                emit(emptyPreferences())
-            } else {
-                throw exception
-            }
-        }.map { prefs ->
-            prefs[REFRESH_TOKEN] ?: ""
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear session data", e)
         }
     }
 
     fun getExpiredAt(): Flow<String> {
-        return context.expiredAtDataStore.data.catch { exception ->
-            if (exception is IOException) {
-                exception.printStackTrace()
-                emit(emptyPreferences())
-            } else {
-                throw exception
+        return context.tokenDataStore.data
+            .catch { exception ->
+                Log.e(TAG, "Error reading expired at", exception)
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
             }
-        }.map { prefs ->
-            prefs[EXPIRED_AT] ?: ""
-        }
+            .map { prefs ->
+                prefs[EXPIRED_AT] ?: ""
+            }
     }
 }

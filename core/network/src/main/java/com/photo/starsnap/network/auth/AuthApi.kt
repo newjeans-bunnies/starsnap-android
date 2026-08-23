@@ -29,6 +29,10 @@ interface AuthApi {
     @Headers("Auth: false")
     suspend fun login(@Body loginDto: LoginDto): TokenDto
 
+    @POST("/api/auth/logout")
+    @Headers("Auth: false")
+    suspend fun logout()
+
     @POST("/api/auth/signup") // 회원가입
     @Headers("Auth: false")
     suspend fun signup(@Body signupDto: SignupDto): StatusDto
