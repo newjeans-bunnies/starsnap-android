@@ -4,11 +4,13 @@ import com.photo.starsnap.network.file.dto.rq.UploadFileRequestDto
 import com.photo.starsnap.network.file.dto.rs.UploadFileResponseDto
 import okhttp3.RequestBody
 import retrofit2.Response
+import java.util.Locale
 import javax.inject.Inject
 
 class FileApiRepositoryImpl @Inject constructor(
-    private val fileApi: FileApi
-): FileRepository {
+    private val fileApi: FileApi,
+    private val presignedUploadApi: PresignedUploadApi
+) : FileRepository {
     override suspend fun createPhotoPresidentUrl(uploadRequest: UploadFileRequestDto): Response<UploadFileResponseDto> {
         return fileApi.createPhotoPresidentUrl(uploadRequest)
     }
@@ -20,21 +22,34 @@ class FileApiRepositoryImpl @Inject constructor(
     override suspend fun uploadFile(
         presignedUrl: String,
         contentType: String,
-        aiState: Boolean,
-        dateTaken: String,
-        source: String,
-        userId: String,
+        requiredHeaders: Map<String, String>,
         file: RequestBody
     ) {
-        return fileApi.uploadFile(
-            presignedUrl,
-            contentType,
-            aiState,
-            dateTaken,
-            source,
-            userId,
-            file
+        return presignedUploadApi.uploadFile(
+            presignedUrl = presignedUrl,
+            headers = buildPresignedUploadHeaders(contentType, requiredHeaders),
+            file = file
         )
     }
 
 }
+
+internal fun buildPresignedUploadHeaders(
+    contentType: String,
+    requiredHeaders: Map<String, String>
+): Map<String, String> = buildMap {
+    requiredHeaders.forEach { (name, value) ->
+        if (name.lowercase(Locale.ROOT) !in SENSITIVE_UPLOAD_HEADERS &&
+            !name.equals("Content-Type", ignoreCase = true)
+        ) {
+            put(name, value)
+        }
+    }
+    put("Content-Type", contentType)
+}
+
+private val SENSITIVE_UPLOAD_HEADERS = setOf(
+    "authorization",
+    "cookie",
+    "proxy-authorization"
+)

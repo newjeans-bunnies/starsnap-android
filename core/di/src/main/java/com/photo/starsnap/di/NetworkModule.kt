@@ -7,6 +7,8 @@ import com.photo.starsnap.datastore.AuthSessionGate
 import com.photo.starsnap.datastore.TokenManager
 import com.photo.starsnap.di.Url.BASE_URL
 import com.photo.starsnap.network.auth.AuthApi
+import com.photo.starsnap.network.file.FileApi
+import com.photo.starsnap.network.file.PresignedUploadApi
 import com.photo.starsnap.network.message.ChatSocketManager
 import com.photo.starsnap.network.message.MessageApi
 import com.photo.starsnap.network.report.ReportApi
@@ -21,17 +23,24 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Authenticator
+import okhttp3.CookieJar
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 
 object Url {
     val BASE_URL: String = BuildConfig.STARSNAP_API_BASE_URL
 }
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class PresignedUpload
 
 
 
@@ -54,6 +63,16 @@ class NetworkModule {
     @Provides
     @Singleton
     fun provideSnapApi(retrofit: Retrofit): SnapApi = retrofit.create(SnapApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideFileApi(retrofit: Retrofit): FileApi = retrofit.create(FileApi::class.java)
+
+    @Provides
+    @Singleton
+    fun providePresignedUploadApi(
+        @PresignedUpload retrofit: Retrofit
+    ): PresignedUploadApi = retrofit.create(PresignedUploadApi::class.java)
 
     @Provides
     @Singleton
@@ -121,6 +140,31 @@ class NetworkModule {
             .client(okHttpClient)
             .build()
     }
+
+    @Provides
+    @Singleton
+    @PresignedUpload
+    fun providePresignedUploadRetrofit(
+        @PresignedUpload okHttpClient: OkHttpClient
+    ): Retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(okHttpClient)
+        .build()
+
+    @Provides
+    @Singleton
+    @PresignedUpload
+    fun providePresignedUploadOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .cookieJar(CookieJar.NO_COOKIES)
+            .authenticator(Authenticator.NONE)
+            .proxyAuthenticator(Authenticator.NONE)
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
 
     @Singleton
     @Provides

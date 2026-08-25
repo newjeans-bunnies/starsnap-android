@@ -4,6 +4,7 @@ import com.photo.starsnap.network.dto.SliceResponseDto
 import com.photo.starsnap.network.dto.StatusDto
 import com.photo.starsnap.network.snap.dto.CommentDto
 import com.photo.starsnap.network.snap.dto.CreateCommentRequestDto
+import com.photo.starsnap.network.snap.dto.CreateSnapRequestDto
 import com.photo.starsnap.network.snap.dto.SnapDto
 import com.photo.starsnap.network.snap.dto.SnapLikeToggleDto
 import com.photo.starsnap.network.snap.dto.SnapResponseDto
@@ -15,6 +16,7 @@ import retrofit2.http.Headers
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Multipart
 
@@ -22,14 +24,7 @@ interface SnapApi {
     @Multipart
     @POST("/api/snap/create") // snap 생성
     suspend fun createSnap(
-        @Part("image") image: RequestBody,
-        @Part("title") title: RequestBody,
-        @Part("source") source: RequestBody,
-        @Part("date-taken") dateTaken: RequestBody,
-        @Part("ai-state") aiState: RequestBody,
-        @Part("tag") tag: List<RequestBody>,
-        @Part("star-id") starId: List<RequestBody>,
-        @Part("star-group-id") starGroupId: List<RequestBody>
+        @Part("snapDto") snapDto: CreateSnapRequestDto
     )
 
     @GET("/api/snap/send") // snap 조회
@@ -52,6 +47,13 @@ interface SnapApi {
 
     @GET("/api/snap/feed") // snap 기본 조회
     suspend fun getFeedSnap(
+        @Query("page") page: Int,
+        @Query("size") size: Int
+    ): SliceResponseDto<SnapResponseDto>
+
+    @GET("/api/snap/{snapId}/related") // 얼굴 벡터 기반 연관 스냅 조회
+    suspend fun getRelatedSnaps(
+        @Path("snapId") snapId: String,
         @Query("page") page: Int,
         @Query("size") size: Int
     ): SliceResponseDto<SnapResponseDto>

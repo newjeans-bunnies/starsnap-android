@@ -711,6 +711,53 @@ fun SnapStar() {
 }
 
 @Composable
-fun RelatedSnap() {
-
+fun RelatedSnap(
+    snap: SnapResponseDto,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .width(164.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(StarSnapColor.surface)
+            .border(1.dp, StarSnapColor.border, RoundedCornerShape(14.dp))
+            .clickableSingle(
+                onClickLabel = "비슷한 얼굴의 스냅 상세 보기",
+                role = Role.Button,
+                onClick = onClick
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio((snap.snapData.imageAspectRatio ?: 1f).coerceIn(0.8f, 1.4f))
+        ) {
+            GlideImage(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(StarSnapColor.surfaceSubtle),
+                imageModel = { getImageUrl(snap.snapData.imageKey) },
+                imageOptions = ImageOptions(
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center
+                ),
+                loading = { SnapSkeleton() }
+            )
+        }
+        Text(
+            text = snap.snapData.title,
+            style = StarSnapTypography.label.copy(color = StarSnapColor.text),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 10.dp, top = 10.dp, end = 10.dp)
+        )
+        Text(
+            text = snap.createdUser.username,
+            style = StarSnapTypography.caption.copy(color = StarSnapColor.textMuted),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 10.dp, top = 2.dp, end = 10.dp, bottom = 10.dp)
+        )
+    }
 }

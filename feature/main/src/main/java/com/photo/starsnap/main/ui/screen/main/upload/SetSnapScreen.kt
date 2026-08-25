@@ -41,6 +41,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -104,6 +105,7 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
     }
     val context = LocalContext.current
     val selectedPhotos by uploadViewModel.selectedPhotos.collectAsStateWithLifecycle()
+    val uploadState by uploadViewModel.uploadState.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState(pageCount = { selectedPhotos.size })
 
     var showDots by remember { mutableStateOf(false) }
@@ -131,7 +133,16 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
         }
     }
 
-    val canSubmit = title.isNotBlank() && selectedPhotos.isNotEmpty()
+    val canSubmit = title.isNotBlank() &&
+        selectedPhotos.isNotEmpty() &&
+        !uploadState.isUploading &&
+        !uploadState.isComplete
+
+    LaunchedEffect(uploadState.errorMessage) {
+        uploadState.errorMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     Scaffold(
         containerColor = StarSnapColor.canvas,
@@ -145,32 +156,55 @@ fun SetSnapScreen(navController: NavController, uploadViewModel: UploadViewModel
                     .height(48.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(
-                        if (canSubmit) StarSnapColor.brand else StarSnapColor.borderStrong
-                    )
-                    .then(
-                        if (canSubmit) {
-                            Modifier.clickableSingle {
-                                uploadViewModel.uploadSnap(
-                                    context,
-                                    title,
-                                    tags,
-                                    source,
-                                    dateTaken,
-                                    aiState,
-                                    commentsEnabled
-                                )
-                            }
-                        } else {
-                            Modifier
+                        when {
+                            uploadState.isComplete -> StarSnapColor.brand
+                            canSubmit -> StarSnapColor.brand
+                            else -> StarSnapColor.borderStrong
                         }
-                    ),
+                    )
+                    .clickableSingle(enabled = canSubmit) {
+                        uploadViewModel.uploadSnap(
+                            context,
+                            title,
+                            tags,
+                            source,
+                            dateTaken,
+                            aiState,
+                            commentsEnabled
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (canSubmit) "게시하기" else "제목과 사진을 확인해 주세요",
-                    color = if (canSubmit) StarSnapColor.onBrand else StarSnapColor.textMuted,
-                    style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
-                )
+                when {
+                    uploadState.isUploading -> Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = StarSnapColor.onBrand,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "게시 중...",
+                            color = StarSnapColor.onBrand,
+                            style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+
+                    uploadState.isComplete -> Text(
+                        text = "게시 완료",
+                        color = StarSnapColor.onBrand,
+                        style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
+                    )
+
+                    else -> Text(
+                        text = if (canSubmit) "게시하기" else "제목과 사진을 확인해 주세요",
+                        color = if (canSubmit) StarSnapColor.onBrand else StarSnapColor.textMuted,
+                        style = StarSnapTypography.label.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
             }
         },
     ) { padding ->

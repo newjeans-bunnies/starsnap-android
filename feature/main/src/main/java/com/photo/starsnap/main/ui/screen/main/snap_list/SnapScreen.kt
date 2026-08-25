@@ -1,6 +1,7 @@
 package com.photo.starsnap.main.ui.screen.main.snap_list
 
 import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,10 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -31,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -46,11 +51,14 @@ import com.photo.starsnap.main.ui.component.SnapIcon
 import com.photo.starsnap.main.ui.component.SnapImage
 import com.photo.starsnap.main.ui.component.SnapInformation
 import com.photo.starsnap.main.ui.component.SnapMessages
+import com.photo.starsnap.main.ui.component.RelatedSnap
 import com.photo.starsnap.main.ui.component.SnapUser
 import com.photo.starsnap.main.ui.component.TopAppBar
+import com.photo.starsnap.main.viewmodel.main.RelatedSnapsState
 import com.photo.starsnap.main.viewmodel.main.SnapViewModel
 import com.photo.starsnap.main.viewmodel.main.StarViewModel
 import com.photo.starsnap.main.viewmodel.main.UserViewModel
+import com.photo.starsnap.network.snap.dto.SnapResponseDto
 import com.photo.starsnap.network.snap.dto.CommentDto
 
 @Composable
@@ -66,6 +74,8 @@ fun SnapScreen(
     }
     val snap = viewModel.snapState.collectAsState()
     val connected = viewModel.connectedState.collectAsState().value
+    val relatedSnaps = viewModel.relatedSnapsState.collectAsState().value
+    val detailScrollState = rememberScrollState()
     val myUsername = userViewModel.userData.collectAsState().value.username
     val canEdit = myUsername.isNotBlank() && myUsername == snap.value.selectSnap?.createdUser?.username
     var menuExpanded by remember { mutableStateOf(false) }
@@ -90,7 +100,10 @@ fun SnapScreen(
     }
 
     LaunchedEffect(snap.value.selectSnap?.snapData?.snapId) {
-        viewModel.resolveConnected(snap.value.selectSnap?.snapData?.tags ?: emptyList())
+        val selectedSnap = snap.value.selectSnap
+        detailScrollState.scrollTo(0)
+        viewModel.resolveConnected(selectedSnap?.snapData?.tags ?: emptyList())
+        selectedSnap?.snapData?.snapId?.let(viewModel::loadRelatedSnaps)
     }
 
     if (deleteDialogOpen) {
@@ -180,7 +193,7 @@ fun SnapScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(detailScrollState)
         ) {
             // User header (web: 상단 작성자 바 - 아바타 + 유저명 + 날짜)
             Column(
@@ -301,7 +314,72 @@ fun SnapScreen(
                         )
                     }
                 )
+                Spacer(modifier = Modifier.height(20.dp))
+                SnapDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+                RelatedSnapsSection(
+                    state = relatedSnaps,
+                    onRetry = {
+                        snap.value.selectSnap?.snapData?.snapId?.let(viewModel::loadRelatedSnaps)
+                    },
+                    onOpen = viewModel::selectSnap
+                )
                 Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelatedSnapsSection(
+    state: RelatedSnapsState,
+    onRetry: () -> Unit,
+    onOpen: (SnapResponseDto) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = "비슷한 얼굴의 스냅",
+            style = StarSnapTypography.title,
+            color = StarSnapColor.text
+        )
+
+        when {
+            state.loading -> Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(132.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = StarSnapColor.brand)
+            }
+
+            state.errorMessage != null -> Column {
+                Text(
+                    text = state.errorMessage,
+                    style = StarSnapTypography.label,
+                    color = StarSnapColor.textMuted
+                )
+                TextButton(onClick = onRetry) {
+                    Text("다시 시도", color = StarSnapColor.brandActive)
+                }
+            }
+
+            state.snaps.isEmpty() -> Text(
+                text = "같거나 비슷한 얼굴이 포함된 스냅이 아직 없어요.",
+                style = StarSnapTypography.label,
+                color = StarSnapColor.textMuted
+            )
+
+            else -> LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(
+                    items = state.snaps,
+                    key = { it.snapData.snapId }
+                ) { related ->
+                    RelatedSnap(
+                        snap = related,
+                        onClick = { onOpen(related) }
+                    )
+                }
             }
         }
     }

@@ -1,13 +1,9 @@
 package com.photo.starsnap.main.viewmodel.main
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -19,22 +15,29 @@ import com.photo.starsnap.main.utils.paging.CustomGalleryPagingSource
 import com.photo.starsnap.main.utils.paging.StarGroupPagingSource
 import com.photo.starsnap.main.utils.paging.StarPagingSource
 import com.photo.starsnap.model.photo.PhotoRepository
+import com.photo.starsnap.network.file.FileRepository
+import com.photo.starsnap.network.file.dto.rq.UploadFileRequestDto
 import com.photo.starsnap.network.snap.SnapRepository
+import com.photo.starsnap.network.snap.dto.CreateSnapRequestDto
 import com.photo.starsnap.network.star.StarRepository
 import com.photo.starsnap.network.star.dto.StarGroupResponseDto
 import com.photo.starsnap.network.star.dto.StarResponseDto
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import android.content.Context
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.io.IOException
 import javax.inject.Inject
 
 @HiltViewModel
 class UploadViewModel @Inject constructor(
     private val snapRepository: SnapRepository,
+    private val fileRepository: FileRepository,
     private val starRepository: StarRepository,
     private val photoRepository: PhotoRepository
 ) : ViewModel() {
@@ -98,8 +101,15 @@ class UploadViewModel @Inject constructor(
     val selectedStarGroups: StateFlow<List<StarGroupResponseDto>>
         get() = _selectedStarGroups
 
+    private val _uploadState = MutableStateFlow(UploadSnapState())
+    val uploadState: StateFlow<UploadSnapState> get() = _uploadState
+
+    private val uploadGuard = SingleUploadGuard()
+    private var uploadJob: Job? = null
+
     // 사진 선택
     fun selectedImage(id: Long, imageUri: Uri) {
+        resetCompletedUploadForNewDraft()
         val current = _selectedImages.value
         val exists = current.any { it.id == id }
         _selectedImages.value = if (exists) {
@@ -113,6 +123,7 @@ class UploadViewModel @Inject constructor(
     }
 
     fun removeSelectImage() {
+        resetCompletedUploadForNewDraft()
         Log.d(TAG, "선택된 사진 해제됨")
         _selectedImages.value = listOf()
     }
@@ -161,62 +172,107 @@ class UploadViewModel @Inject constructor(
         dateTaken: String,
         aiState: Boolean,
         commentsEnabled: Boolean
-    ) = viewModelScope.launch {
-        try {
-            if (_selectedImages.value.isEmpty()) {
-                Log.e(TAG, "No images selected")
-                return@launch
+    ) {
+        val selectedImages = _selectedImages.value
+        if (selectedImages.isEmpty()) {
+            _uploadState.value = UploadSnapState(errorMessage = "사진을 한 장 이상 선택해 주세요.")
+            return
+        }
+        if (_uploadState.value.isComplete || uploadJob?.isActive == true || !uploadGuard.tryStart()) {
+            return
+        }
+
+        val starIds = _selectedStars.value.map { it.id }
+        val starGroupIds = _selectedStarGroups.value.map { it.id }
+        _uploadState.value = UploadSnapState(isUploading = true)
+
+        uploadJob = viewModelScope.launch {
+            try {
+                val contentResolver = context.applicationContext.contentResolver
+                val preparedPhotos = withContext(Dispatchers.IO) {
+                    selectedImages.map { selectedImage ->
+                        contentResolver.createSnapPhotoRequestBody(selectedImage.imageUri)
+                    }
+                }
+
+                val photoKeys = preparedPhotos.map { (photo, requestBody) ->
+                    val presignResponse = fileRepository.createPhotoPresidentUrl(
+                        UploadFileRequestDto(
+                            aiState = aiState,
+                            dateTaken = dateTaken,
+                            source = source,
+                            contentType = photo.contentType,
+                            fileSize = photo.sizeBytes,
+                        )
+                    )
+                    if (!presignResponse.isSuccessful) {
+                        throw IOException("사진 업로드 URL 생성 실패 (${presignResponse.code()})")
+                    }
+                    val upload = presignResponse.body()
+                        ?: throw IOException("사진 업로드 URL 응답이 비어 있습니다.")
+
+                    fileRepository.uploadFile(
+                        presignedUrl = upload.presignedUrl,
+                        contentType = photo.contentType,
+                        requiredHeaders = upload.requiredHeaders,
+                        file = requestBody
+                    )
+                    extractPhotoFileKey(upload.presignedUrl)
+                }
+
+                snapRepository.createSnap(
+                    CreateSnapRequestDto(
+                        title = title.trim(),
+                        description = "",
+                        source = source,
+                        tags = tag,
+                        photos = photoKeys,
+                        starIds = starIds,
+                        starGroupIds = starGroupIds,
+                        commentState = commentsEnabled
+                    )
+                )
+
+                _uploadState.value = UploadSnapState(isComplete = true)
+                Log.d(TAG, "Snap created successfully")
+            } catch (error: CancellationException) {
+                _uploadState.value = UploadSnapState()
+                throw error
+            } catch (error: Exception) {
+                Log.e(TAG, "Snap upload failed: ${error::class.java.simpleName}")
+                _uploadState.value = UploadSnapState(
+                    errorMessage = if (error is UploadInputException) {
+                        error.message
+                    } else {
+                        "스냅을 게시하지 못했어요. 잠시 후 다시 시도해 주세요."
+                    }
+                )
+            } finally {
+                uploadGuard.finish()
             }
-
-            // 첫 번째 선택 이미지 사용
-            val firstImage = _selectedImages.value.first()
-            val requestBody = getRequestBodyFromUri(context, firstImage.imageUri)
-
-            if (requestBody == null) {
-                Log.e(TAG, "Failed to convert URI to RequestBody")
-                return@launch
-            }
-
-            // Star ID와 StarGroup ID 추출
-            val starIds = _selectedStars.value.map { it.id.toString() }
-            val starGroupIds = _selectedStarGroups.value.map { it.id.toString() }
-
-            // 서버 API 호출
-            snapRepository.createSnap(
-                image = requestBody,
-                title = title,
-                source = source,
-                dateTaken = dateTaken,
-                aiState = aiState,
-                tag = tag,
-                starId = starIds,
-                starGroupId = starGroupIds
-            )
-
-            Log.d(TAG, "Snap created successfully")
-            // 여기에 성공 콜백이나 네비게이션 로직 추가 가능
-        } catch (e: Exception) {
-            Log.e(TAG, "Error uploading snap: ${e.message}", e)
         }
     }
 
-    // Uri로부터 RequestBody를 생성하는 헬퍼 함수 (Scoped Storage 호환)
-    private fun getRequestBodyFromUri(context: Context, uri: Uri): okhttp3.RequestBody? {
-        return try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            if (inputStream != null) {
-                val bytes = inputStream.readBytes()
-                inputStream.close()
-                bytes.toRequestBody("image/jpeg".toMediaType())
-            } else {
-                Log.e(TAG, "Could not open input stream for URI: $uri")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error converting URI to RequestBody: ${e.message}", e)
-            null
+    private fun resetCompletedUploadForNewDraft() {
+        if (_uploadState.value.isComplete) {
+            _uploadState.value = UploadSnapState()
         }
     }
+}
+
+data class UploadSnapState(
+    val isUploading: Boolean = false,
+    val isComplete: Boolean = false,
+    val errorMessage: String? = null
+)
+
+internal fun extractPhotoFileKey(presignedUrl: String): String {
+    val pathSegments = presignedUrl.toHttpUrl().pathSegments
+    val photoIndex = pathSegments.indexOf("photo")
+    require(photoIndex >= 0 && photoIndex < pathSegments.lastIndex) {
+        "Presigned URL does not contain a photo object key"
+    }
+    return pathSegments.drop(photoIndex).joinToString("/")
 }
 
 data class CroppingImage(

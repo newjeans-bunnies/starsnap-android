@@ -2,6 +2,17 @@ package com.photo.starsnap.network.snap.dto
 
 import com.google.gson.annotations.SerializedName
 
+data class CreateSnapRequestDto(
+    val title: String,
+    val description: String,
+    val source: String,
+    val tags: List<String>,
+    val photos: List<String>,
+    val starIds: List<String>,
+    val starGroupIds: List<String>,
+    val commentState: Boolean
+)
+
 data class SnapDto(
     val snapId: String,
     val title: String,

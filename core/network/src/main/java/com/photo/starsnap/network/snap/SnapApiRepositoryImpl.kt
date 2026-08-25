@@ -4,6 +4,7 @@ import com.photo.starsnap.network.dto.SliceResponseDto
 import com.photo.starsnap.network.dto.StatusDto
 import com.photo.starsnap.network.snap.dto.CommentDto
 import com.photo.starsnap.network.snap.dto.CreateCommentRequestDto
+import com.photo.starsnap.network.snap.dto.CreateSnapRequestDto
 import com.photo.starsnap.network.snap.dto.SnapDto
 import com.photo.starsnap.network.snap.dto.SnapLikeToggleDto
 import com.photo.starsnap.network.snap.dto.SnapResponseDto
@@ -15,26 +16,8 @@ import javax.inject.Inject
 class SnapApiRepositoryImpl @Inject constructor(
     private val snapApi: SnapApi
 ) : SnapRepository {
-    override suspend fun createSnap(
-        image: RequestBody,
-        title: String,
-        source: String,
-        dateTaken: String,
-        aiState: Boolean,
-        tag: List<String>,
-        starId: List<String>,
-        starGroupId: List<String>
-    ) {
-        return snapApi.createSnap(
-            image,
-            title.toRequestBody("text/plain".toMediaType()),
-            source.toRequestBody("text/plain".toMediaType()),
-            dateTaken.toRequestBody("text/plain".toMediaType()),
-            aiState.toString().toRequestBody("text/plain".toMediaType()),
-            tag.map { it.toRequestBody("text/plain".toMediaType()) },
-            starId.map { it.toRequestBody("text/plain".toMediaType()) },
-            starGroupId.map { it.toRequestBody("text/plain".toMediaType()) }
-        )
+    override suspend fun createSnap(request: CreateSnapRequestDto) {
+        return snapApi.createSnap(request)
     }
 
     override suspend fun sendSnap(size: Int, page: Int) {
@@ -86,6 +69,14 @@ class SnapApiRepositoryImpl @Inject constructor(
         size: Int
     ): SliceResponseDto<SnapResponseDto> {
         return snapApi.getFeedSnap(page, size)
+    }
+
+    override suspend fun getRelatedSnaps(
+        snapId: String,
+        page: Int,
+        size: Int
+    ): SliceResponseDto<SnapResponseDto> {
+        return snapApi.getRelatedSnaps(snapId, page, size)
     }
 
     override suspend fun toggleSnapLike(snapId: String): SnapLikeToggleDto {
