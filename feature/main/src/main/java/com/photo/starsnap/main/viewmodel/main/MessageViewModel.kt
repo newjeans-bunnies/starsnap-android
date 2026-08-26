@@ -9,7 +9,6 @@ import com.photo.starsnap.network.message.ChatSocketManager
 import com.photo.starsnap.network.message.MessageRepository
 import com.photo.starsnap.network.message.dto.ChatMessageDto
 import com.photo.starsnap.network.message.dto.ChatMessageDeletedFrame
-import com.photo.starsnap.network.message.dto.ChatMessageHistoryPageDto
 import com.photo.starsnap.network.message.dto.ChatMessageRateLimitedFrame
 import com.photo.starsnap.network.message.dto.ChatMessageUpdatedFrame
 import com.photo.starsnap.network.message.dto.ChatRoomCreatePayload
@@ -19,6 +18,7 @@ import com.photo.starsnap.network.message.dto.ChatTypingFrame
 import com.photo.starsnap.network.message.dto.ChatUpdatePayload
 import com.photo.starsnap.network.user.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +41,13 @@ data class ChatUiMessage(
     val senderUsername: String,
     val text: String,
     val status: String,
-    val createdAt: String
+    val createdAt: String,
+    val createdAtIso: String = "",
+)
+
+data class ChatHistoryLoadError(
+    val message: String,
+    val retryOlder: Boolean,
 )
 
 data class ChatDraftRestoreEvent(
@@ -160,6 +166,12 @@ class MessageViewModel @Inject constructor(
     private val _rooms = MutableStateFlow<List<ChatRoomSummaryDto>>(emptyList())
     val rooms = _rooms.asStateFlow()
 
+    private val _roomsLoading = MutableStateFlow(true)
+    val roomsLoading = _roomsLoading.asStateFlow()
+
+    private val _roomsError = MutableStateFlow<String?>(null)
+    val roomsError = _roomsError.asStateFlow()
+
     private val _roomPreviews = MutableStateFlow<Map<String, String>>(emptyMap())
     val roomPreviews = _roomPreviews.asStateFlow()
 
@@ -168,6 +180,15 @@ class MessageViewModel @Inject constructor(
 
     private val _messages = MutableStateFlow<List<ChatUiMessage>>(emptyList())
     val messages = _messages.asStateFlow()
+
+    private val _historyLoading = MutableStateFlow(false)
+    val historyLoading = _historyLoading.asStateFlow()
+
+    private val _olderHistoryLoading = MutableStateFlow(false)
+    val olderHistoryLoading = _olderHistoryLoading.asStateFlow()
+
+    private val _historyError = MutableStateFlow<ChatHistoryLoadError?>(null)
+    val historyError = _historyError.asStateFlow()
 
     private val _hasMoreMessages = MutableStateFlow(false)
     val hasMoreMessages = _hasMoreMessages.asStateFlow()
@@ -194,8 +215,13 @@ class MessageViewModel @Inject constructor(
     private var typingStopJob: Job? = null
     private var remoteTypingStopJob: Job? = null
     private var sendCooldownJob: Job? = null
+    private var roomsLoadJob: Job? = null
+    private var historyLoadJob: Job? = null
+    private var olderHistoryLoadJob: Job? = null
     private var localTypingRoomId: String? = null
-    private var isLoadingOlderMessages = false
+    private val roomsLoadGeneration = AtomicLong(0)
+    private val historyLoadGeneration = AtomicLong(0)
+    private val olderHistoryLoadGeneration = AtomicLong(0)
     @Volatile
     private var sendCooldownGeneration = 0L
     private val sendCooldownLock = Any()
@@ -271,13 +297,31 @@ class MessageViewModel @Inject constructor(
     }
 
     fun refreshRooms() {
-        viewModelScope.launch {
-            runCatching { messageRepository.getRooms() }
-                .onSuccess { list ->
+        roomsLoadJob?.cancel()
+        val generation = roomsLoadGeneration.incrementAndGet()
+        _roomsLoading.value = true
+        _roomsError.value = null
+        roomsLoadJob = viewModelScope.launch {
+            try {
+                val list = messageRepository.getRooms()
+                if (generation == roomsLoadGeneration.get()) {
                     _rooms.value = list
                     updateRoomPreviews(list)
+                    _roomsError.value = null
                 }
-                .onFailure { Log.d(TAG, "refreshRooms failed", it) }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (generation == roomsLoadGeneration.get()) {
+                    Log.d(TAG, "refreshRooms failed", error)
+                    _roomsError.value = "네트워크 상태를 확인한 뒤 다시 시도해 주세요."
+                }
+            } finally {
+                if (generation == roomsLoadGeneration.get()) {
+                    _roomsLoading.value = false
+                    roomsLoadJob = null
+                }
+            }
         }
     }
 
@@ -295,6 +339,10 @@ class MessageViewModel @Inject constructor(
         stopTyping()
         remoteTypingStopJob?.cancel()
         _typingSenderUserId.value = null
+        _error.value = null
+        _historyError.value = null
+        olderHistoryLoadGeneration.incrementAndGet()
+        _olderHistoryLoading.value = false
         _selectedRoom.value = room
         _messages.value = emptyList()
         _hasMoreMessages.value = false
@@ -384,45 +432,122 @@ class MessageViewModel @Inject constructor(
     }
 
     private fun loadHistory(room: ChatRoomSummaryDto) {
-        viewModelScope.launch {
-            val historyPage = runCatching { messageRepository.getHistory(room.roomId) }
-                .getOrElse {
-                    Log.d(TAG, "loadHistory failed", it)
-                    ChatMessageHistoryPageDto(emptyList(), hasMore = false)
-                }
-            if (_selectedRoom.value?.roomId != room.roomId) return@launch
+        historyLoadJob?.cancel()
+        olderHistoryLoadJob?.cancel()
+        olderHistoryLoadJob = null
+        olderHistoryLoadGeneration.incrementAndGet()
+        _olderHistoryLoading.value = false
+        val generation = historyLoadGeneration.incrementAndGet()
+        val baselineMessages = _messages.value
+        _historyError.value = null
+        _historyLoading.value = true
+        historyLoadJob = viewModelScope.launch {
+            try {
+                val historyPage = messageRepository.getHistory(room.roomId)
+                if (!isCurrentHistoryRequest(generation, room.roomId)) return@launch
 
-            _messages.value = historyPage.messages.map(::toUiMessage)
-            _hasMoreMessages.value = historyPage.hasMore && historyPage.messages.isNotEmpty()
+                val historyMessages = historyPage.messages.map(::toUiMessage)
+                _messages.update { current ->
+                    if (isCurrentHistoryRequest(generation, room.roomId)) {
+                        mergeChatHistory(
+                            history = historyMessages,
+                            current = current,
+                            baseline = baselineMessages,
+                        )
+                    } else {
+                        current
+                    }
+                }
+                if (!isCurrentHistoryRequest(generation, room.roomId)) return@launch
+                _hasMoreMessages.value = historyPage.hasMore && historyPage.messages.isNotEmpty()
+                _historyError.value = null
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (isCurrentHistoryRequest(generation, room.roomId)) {
+                    Log.d(TAG, "loadHistory failed", error)
+                    _historyError.value = ChatHistoryLoadError(
+                        message = "메시지를 불러오지 못했어요.",
+                        retryOlder = false,
+                    )
+                }
+            } finally {
+                if (generation == historyLoadGeneration.get()) {
+                    _historyLoading.value = false
+                    historyLoadJob = null
+                }
+            }
         }
     }
 
     fun loadOlderMessages() {
         val room = _selectedRoom.value ?: return
         val beforeMessageId = _messages.value.firstOrNull()?.id ?: return
-        if (!_hasMoreMessages.value || isLoadingOlderMessages) return
+        if (_historyLoading.value || !_hasMoreMessages.value || _olderHistoryLoading.value) return
 
-        isLoadingOlderMessages = true
-        viewModelScope.launch {
+        olderHistoryLoadJob?.cancel()
+        val generation = olderHistoryLoadGeneration.incrementAndGet()
+        _historyError.value = null
+        _olderHistoryLoading.value = true
+        olderHistoryLoadJob = viewModelScope.launch {
             try {
                 val historyPage = messageRepository.getHistory(
                     roomId = room.roomId,
                     beforeMessageId = beforeMessageId,
                 )
-                if (_selectedRoom.value?.roomId != room.roomId) return@launch
+                if (!isCurrentOlderHistoryRequest(generation, room.roomId)) return@launch
 
                 val olderMessages = historyPage.messages.map(::toUiMessage)
-                val currentMessageIds = _messages.value.mapTo(mutableSetOf()) { it.id }
-                _messages.value = olderMessages.filterNot { it.id in currentMessageIds } + _messages.value
+                _messages.update { current ->
+                    if (isCurrentOlderHistoryRequest(generation, room.roomId)) {
+                        val currentMessageIds = current.mapTo(mutableSetOf(), ChatUiMessage::id)
+                        olderMessages.filterNot { it.id in currentMessageIds } + current
+                    } else {
+                        current
+                    }
+                }
+                if (!isCurrentOlderHistoryRequest(generation, room.roomId)) return@launch
                 _hasMoreMessages.value = historyPage.hasMore && historyPage.messages.isNotEmpty()
+                _historyError.value = null
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
-                Log.d(TAG, "loadOlderMessages failed", error)
-                _error.value = "이전 메시지를 불러오지 못했어요."
+                if (isCurrentOlderHistoryRequest(generation, room.roomId)) {
+                    Log.d(TAG, "loadOlderMessages failed", error)
+                    _historyError.value = ChatHistoryLoadError(
+                        message = "이전 메시지를 불러오지 못했어요.",
+                        retryOlder = true,
+                    )
+                }
             } finally {
-                isLoadingOlderMessages = false
+                if (generation == olderHistoryLoadGeneration.get()) {
+                    _olderHistoryLoading.value = false
+                    olderHistoryLoadJob = null
+                }
             }
         }
     }
+
+    fun retryHistory() {
+        val room = _selectedRoom.value ?: return
+        if (_historyError.value?.retryOlder == true) {
+            loadOlderMessages()
+        } else {
+            loadHistory(room)
+        }
+    }
+
+    private fun isCurrentHistoryRequest(generation: Long, roomId: String): Boolean =
+        generation == historyLoadGeneration.get() && _selectedRoom.value?.roomId == roomId
+
+    private fun isCurrentOlderHistoryRequest(generation: Long, roomId: String): Boolean =
+        shouldCommitOlderHistory(
+            requestGeneration = generation,
+            currentGeneration = olderHistoryLoadGeneration.get(),
+            requestRoomId = roomId,
+            currentRoomId = _selectedRoom.value?.roomId,
+            fullHistoryLoading = _historyLoading.value,
+        )
 
     fun onDraftChanged(text: String) {
         val room = _selectedRoom.value
@@ -609,11 +734,13 @@ class MessageViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { messageRepository.delete(messageId) }
                 .onSuccess {
-                    _messages.value = _messages.value.map { message ->
-                        if (message.id == messageId) {
-                            message.copy(status = "DELETED", text = "삭제된 메시지")
-                        } else {
-                            message
+                    _messages.update { current ->
+                        current.map { message ->
+                            if (message.id == messageId) {
+                                message.copy(status = "DELETED", text = "삭제된 메시지")
+                            } else {
+                                message
+                            }
                         }
                     }
                     refreshRooms()
@@ -648,19 +775,33 @@ class MessageViewModel @Inject constructor(
         if (_selectedRoom.value?.roomId != message.roomId) return
 
         val updated = toUiMessage(message)
-        _messages.value = _messages.value.map { current ->
-            if (current.id == updated.id) updated else current
+        _messages.update { messages ->
+            if (_selectedRoom.value?.roomId != message.roomId) {
+                messages
+            } else if (messages.any { it.id == updated.id }) {
+                messages.map { current ->
+                    if (current.id == updated.id) updated else current
+                }
+            } else {
+                (messages + updated).sortedBy { it.createdAtIso.ifBlank { it.createdAt } }
+            }
         }
         refreshRooms()
     }
 
     private fun handleMessageDeleted(frame: ChatMessageDeletedFrame) {
         if (_selectedRoom.value?.roomId == frame.roomId) {
-            _messages.value = _messages.value.map { message ->
-                if (message.id == frame.messageId) {
-                    message.copy(status = frame.status, text = "삭제된 메시지")
+            _messages.update { current ->
+                if (_selectedRoom.value?.roomId != frame.roomId) {
+                    current
                 } else {
-                    message
+                    current.map { message ->
+                        if (message.id == frame.messageId) {
+                            message.copy(status = frame.status, text = "삭제된 메시지")
+                        } else {
+                            message
+                        }
+                    }
                 }
             }
         }
@@ -668,8 +809,14 @@ class MessageViewModel @Inject constructor(
     }
 
     private fun appendMessage(message: ChatMessageDto) {
-        if (_messages.value.any { it.id == message.id }) return
-        _messages.value = _messages.value + toUiMessage(message)
+        val incoming = toUiMessage(message)
+        _messages.update { current ->
+            if (_selectedRoom.value?.roomId != message.roomId || current.any { it.id == incoming.id }) {
+                current
+            } else {
+                current + incoming
+            }
+        }
     }
 
     private fun toUiMessage(message: ChatMessageDto): ChatUiMessage {
@@ -681,7 +828,8 @@ class MessageViewModel @Inject constructor(
             senderUsername = message.senderUsername,
             text = text,
             status = message.status,
-            createdAt = formatTime(message.createdAt)
+            createdAt = formatTime(message.createdAt),
+            createdAtIso = message.createdAt,
         )
     }
 
@@ -712,4 +860,37 @@ class MessageViewModel @Inject constructor(
         val content: String,
     )
 
+}
+
+internal fun shouldCommitOlderHistory(
+    requestGeneration: Long,
+    currentGeneration: Long,
+    requestRoomId: String,
+    currentRoomId: String?,
+    fullHistoryLoading: Boolean,
+): Boolean =
+    !fullHistoryLoading &&
+        requestGeneration == currentGeneration &&
+        requestRoomId == currentRoomId
+
+internal fun mergeChatHistory(
+    history: List<ChatUiMessage>,
+    current: List<ChatUiMessage>,
+    baseline: List<ChatUiMessage> = emptyList(),
+): List<ChatUiMessage> {
+    val currentById = current.associateBy(ChatUiMessage::id)
+    val baselineById = baseline.associateBy(ChatUiMessage::id)
+    val mergedById = linkedMapOf<String, ChatUiMessage>()
+    history.forEach { message ->
+        val changedSinceRequest = currentById[message.id]
+            ?.takeIf { currentMessage -> currentMessage != baselineById[message.id] }
+        mergedById[message.id] = changedSinceRequest ?: message
+    }
+    current.forEach { message ->
+        mergedById.putIfAbsent(message.id, message)
+    }
+
+    return mergedById.values.sortedWith(
+        compareBy<ChatUiMessage> { message -> message.createdAtIso.ifBlank { message.createdAt } },
+    )
 }

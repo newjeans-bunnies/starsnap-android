@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,13 +37,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.photo.starsnap.designsystem.StarSnapColor
 import com.photo.starsnap.designsystem.text.StarSnapTypography
+import com.photo.starsnap.main.ui.component.DataLoadErrorCard
 import com.photo.starsnap.main.ui.component.TopAppBar
+import com.photo.starsnap.main.ui.component.skeleton.SnapSkeleton
 import com.photo.starsnap.main.utils.constant.Constant
 import com.photo.starsnap.main.viewmodel.main.MessageViewModel
 import com.photo.starsnap.network.message.dto.ChatRoomSummaryDto
@@ -55,6 +62,8 @@ fun MessageListScreen(
 ) {
     val rooms by messageViewModel.rooms.collectAsStateWithLifecycle()
     val roomPreviews by messageViewModel.roomPreviews.collectAsStateWithLifecycle()
+    val roomsLoading by messageViewModel.roomsLoading.collectAsStateWithLifecycle()
+    val roomsError by messageViewModel.roomsError.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
     val visibleRooms = remember(rooms, roomPreviews, query) {
         val normalizedQuery = query.trim()
@@ -91,14 +100,55 @@ fun MessageListScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
 
-            if (visibleRooms.isEmpty()) {
-                EmptyMessageState(hasQuery = query.isNotBlank())
-            } else {
-                LazyColumn(
+            when {
+                roomsLoading && rooms.isEmpty() -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp),
                 ) {
+                    items(6) { index ->
+                        RoomRowSkeleton(
+                            modifier = if (index == 0) {
+                                Modifier.messageLoadingSemantics("대화 목록")
+                            } else {
+                                Modifier
+                            },
+                        )
+                    }
+                }
+
+                roomsError != null && rooms.isEmpty() -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp, vertical = 20.dp),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    DataLoadErrorCard(
+                        title = if (rooms.isEmpty()) {
+                            "대화 목록을 불러오지 못했어요"
+                        } else {
+                            "대화 목록을 새로고침하지 못했어요"
+                        },
+                        description = roomsError.orEmpty(),
+                        onRetry = messageViewModel::refreshRooms,
+                    )
+                }
+
+                visibleRooms.isEmpty() -> EmptyMessageState(hasQuery = query.isNotBlank())
+
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                ) {
+                    if (roomsError != null) {
+                        item(key = "rooms-error") {
+                            DataLoadErrorCard(
+                                title = "대화 목록을 새로고침하지 못했어요",
+                                description = roomsError.orEmpty(),
+                                onRetry = messageViewModel::refreshRooms,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
                     items(visibleRooms, key = { it.roomId }) { room ->
                         RoomRow(
                             room = room,
@@ -119,6 +169,49 @@ fun MessageListScreen(
 }
 
 @Composable
+private fun RoomRowSkeleton(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(StarSnapColor.surface)
+            .heightIn(min = 72.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SnapSkeleton(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape),
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SnapSkeleton(
+                modifier = Modifier
+                    .fillMaxWidth(0.52f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(7.dp)),
+            )
+            SnapSkeleton(
+                modifier = Modifier
+                    .fillMaxWidth(0.82f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(6.dp)),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        SnapSkeleton(
+            modifier = Modifier
+                .width(34.dp)
+                .height(10.dp)
+                .clip(RoundedCornerShape(5.dp)),
+        )
+    }
+}
+
+@Composable
 private fun MessageSearchField(
     value: String,
     onValueChange: (String) -> Unit,
@@ -127,7 +220,7 @@ private fun MessageSearchField(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(44.dp)
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(StarSnapColor.surface)
             .border(1.dp, StarSnapColor.border, RoundedCornerShape(12.dp))
@@ -136,7 +229,7 @@ private fun MessageSearchField(
     ) {
         Icon(
             imageVector = Icons.Default.Search,
-            contentDescription = "대화 검색",
+            contentDescription = null,
             tint = StarSnapColor.textMuted,
             modifier = Modifier.size(20.dp),
         )
@@ -146,8 +239,10 @@ private fun MessageSearchField(
             onValueChange = onValueChange,
             singleLine = true,
             cursorBrush = SolidColor(StarSnapColor.text),
-            textStyle = StarSnapTypography.bodySmall,
-            modifier = Modifier.weight(1f),
+            textStyle = StarSnapTypography.bodySmall.copy(color = StarSnapColor.text),
+            modifier = Modifier
+                .weight(1f)
+                .semantics { contentDescription = "대화 검색" },
             decorationBox = { innerTextField ->
                 Box(contentAlignment = Alignment.CenterStart) {
                     if (value.isEmpty()) {
@@ -169,20 +264,15 @@ private fun EmptyMessageState(hasQuery: Boolean) {
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 20.dp),
-        contentAlignment = Alignment.TopCenter,
+        contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(StarSnapColor.surface)
-                .border(1.dp, StarSnapColor.border, RoundedCornerShape(16.dp))
-                .padding(horizontal = 20.dp, vertical = 28.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = if (hasQuery) "검색 결과가 없어요." else "아직 대화가 없어요.",
-                style = StarSnapTypography.title,
+                style = StarSnapTypography.title.copy(color = StarSnapColor.text),
             )
             Spacer(Modifier.height(6.dp))
             Text(
@@ -208,20 +298,33 @@ private fun RoomRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
             .background(StarSnapColor.surface)
-            .border(1.dp, StarSnapColor.border, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .heightIn(min = 72.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        GlideImage(
+        Box(
             modifier = Modifier
                 .size(48.dp)
                 .background(StarSnapColor.surfaceSubtle, CircleShape)
                 .clip(CircleShape),
-            imageModel = { roomImageUrl },
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = roomName.trim().take(1).ifBlank { "S" },
+                style = StarSnapTypography.label.copy(
+                    color = StarSnapColor.textSubtle,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+            )
+            if (!roomImageUrl.isNullOrBlank()) {
+                GlideImage(
+                    modifier = Modifier.fillMaxSize(),
+                    imageModel = { roomImageUrl },
+                )
+            }
+        }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(
@@ -230,7 +333,10 @@ private fun RoomRow(
             ) {
                 Text(
                     text = roomName,
-                    style = StarSnapTypography.label.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                    style = StarSnapTypography.label.copy(
+                        color = StarSnapColor.text,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

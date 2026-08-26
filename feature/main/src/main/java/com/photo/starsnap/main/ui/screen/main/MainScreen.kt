@@ -37,6 +37,7 @@ import com.photo.starsnap.main.ui.screen.main.setting.SyncNotificationPermission
 import com.photo.starsnap.main.utils.BottomNavItem
 import com.photo.starsnap.main.utils.NavigationRoute.FIX_PROFILE
 import com.photo.starsnap.main.utils.NavigationRoute.HOME_ROUTE
+import com.photo.starsnap.main.utils.NavigationRoute.MESSAGE
 import com.photo.starsnap.main.utils.NavigationRoute.SETTING
 import com.photo.starsnap.main.viewmodel.main.SnapViewModel
 import com.photo.starsnap.main.viewmodel.main.StarViewModel
@@ -121,7 +122,7 @@ fun MainScreen(
                         navController.navigate(BottomNavItem.Home.route)
                     }
                 },
-                onNotifications = {},
+                onMessages = { onNavigate(MESSAGE) },
                 onProfile = {
                     if (currentRoute != BottomNavItem.User.route) {
                         navController.navigate(BottomNavItem.User.route)

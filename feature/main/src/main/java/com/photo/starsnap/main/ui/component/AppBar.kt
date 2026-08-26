@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,7 +47,7 @@ import com.photo.starsnap.designsystem.text.StarSnapTypography
 fun StarSnapAppBar(
     profileImageKey: String?,
     onHome: () -> Unit,
-    onNotifications: () -> Unit,
+    onMessages: () -> Unit,
     onProfile: () -> Unit,
 ) {
     Surface(
@@ -82,10 +82,15 @@ fun StarSnapAppBar(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                IconButton(onClick = onNotifications) {
+                IconButton(
+                    onClick = onMessages,
+                    modifier = Modifier.semantics {
+                        contentDescription = "메시지"
+                    },
+                ) {
                     Icon(
-                        imageVector = Icons.Outlined.Notifications,
-                        contentDescription = "알림",
+                        imageVector = Icons.Outlined.ChatBubbleOutline,
+                        contentDescription = null,
                         modifier = Modifier.size(22.dp),
                         tint = StarSnapColor.textSubtle,
                     )
