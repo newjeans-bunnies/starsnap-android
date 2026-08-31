@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
     // Apply google-services plugin in the application module (required for Firebase / GMS processing)
     alias(libs.plugins.google.services)
     id("com.google.dagger.hilt.android")
@@ -42,9 +41,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
-    }
-    buildFeatures {
-        compose = true
     }
 //    composeOptions {
 //        kotlinCompilerExtensionVersion = "1.5.13"
