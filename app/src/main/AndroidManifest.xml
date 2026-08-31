@@ -24,6 +24,7 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="${usesCleartextTraffic}"
         android:theme="@style/Theme.Starsnapandroid"
+        tools:replace="android:usesCleartextTraffic"
         tools:targetApi="31">
 
         <provider
