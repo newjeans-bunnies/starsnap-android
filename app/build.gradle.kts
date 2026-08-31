@@ -30,7 +30,7 @@ android {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             manifestPlaceholders["usesCleartextTraffic"] = "false"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
