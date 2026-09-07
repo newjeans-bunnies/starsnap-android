@@ -43,7 +43,7 @@ flowchart LR
 ## 프로젝트 구조
 
 ~~~text
-starsnap-android/
+starsnap-sns-android/
 ├─ app/                 # 앱 조립, Activity, FCM 서비스
 ├─ feature/main/        # 화면, 라우팅, ViewModel
 ├─ core/network/        # REST, WebSocket, 인증·쿠키
@@ -73,6 +73,5 @@ starsnap-android/
 ## 관련 문서
 
 - [Main 통합 개요](../README.md)
-- [메인 API 명세](../starsnap-backend/API_SPEC.md)
+- [메인 API 명세](../starsnap-sns-server/API_SPEC.md)
 - [공통 디자인 시스템](../../DESIGN_SYSTEM.md)
-

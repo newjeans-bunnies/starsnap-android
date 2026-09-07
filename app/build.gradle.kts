@@ -8,12 +8,12 @@ plugins {
 }
 
 android {
-    namespace = "com.photo.starsnap"
+    namespace = "com.sns.starsnap"
     compileSdk = 35
 
     defaultConfig {
         // Must match a client package_name in app/google-services.json
-        applicationId = "com.photo.starsnap.main"
+        applicationId = "com.sns.starsnap.main"
         minSdk = 28
         targetSdk = 35
         versionCode = 1

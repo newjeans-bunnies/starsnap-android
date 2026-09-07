@@ -44,7 +44,7 @@ tasks.configureEach {
 }
 
 android {
-    namespace = "com.photo.starsnap.di"
+    namespace = "com.sns.starsnap.di"
     compileSdk = 36
 
     defaultConfig {

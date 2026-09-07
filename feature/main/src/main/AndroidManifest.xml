@@ -18,7 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Starsnapandroid">
         <activity
-            android:name="com.photo.starsnap.main.MainActivity"
+            android:name="com.sns.starsnap.main.MainActivity"
             android:configChanges="uiMode"
             android:exported="true"
             android:theme="@style/Theme.Starsnapandroid"

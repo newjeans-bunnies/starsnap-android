@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.photo.starsnap.designsystem"
+    namespace = "com.sns.starsnap.designsystem"
     compileSdk = 36
 
     defaultConfig {

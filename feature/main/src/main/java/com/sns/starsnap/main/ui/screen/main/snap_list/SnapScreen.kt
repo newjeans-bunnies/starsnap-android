@@ -1,0 +1,405 @@
+package com.sns.starsnap.main.ui.screen.main.snap_list
+
+import android.util.Log
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.sns.starsnap.designsystem.R
+import com.sns.starsnap.designsystem.StarSnapColor
+import com.sns.starsnap.designsystem.text.StarSnapTypography
+import com.sns.starsnap.main.ui.component.SnapCommentInput
+import com.sns.starsnap.main.ui.component.DataLoadErrorCard
+import com.sns.starsnap.main.ui.component.SnapConnectedGroups
+import com.sns.starsnap.main.ui.component.SnapConnectedStars
+import com.sns.starsnap.main.ui.component.SnapDivider
+import com.sns.starsnap.main.ui.component.SnapIcon
+import com.sns.starsnap.main.ui.component.SnapImage
+import com.sns.starsnap.main.ui.component.SnapInformation
+import com.sns.starsnap.main.ui.component.SnapMessages
+import com.sns.starsnap.main.ui.component.RelatedSnap
+import com.sns.starsnap.main.ui.component.SnapUser
+import com.sns.starsnap.main.ui.component.TopAppBar
+import com.sns.starsnap.main.ui.component.skeleton.ConnectedEntitiesSkeleton
+import com.sns.starsnap.main.ui.component.skeleton.RelatedSnapSkeletonCard
+import com.sns.starsnap.main.ui.component.skeleton.loadingSemantics
+import com.sns.starsnap.main.viewmodel.main.RelatedSnapsState
+import com.sns.starsnap.main.viewmodel.main.SnapViewModel
+import com.sns.starsnap.main.viewmodel.main.StarViewModel
+import com.sns.starsnap.main.viewmodel.main.UserViewModel
+import com.sns.starsnap.network.snap.dto.SnapResponseDto
+import com.sns.starsnap.network.snap.dto.CommentDto
+
+@Composable
+fun SnapScreen(
+    navController: NavController,
+    viewModel: SnapViewModel,
+    starViewModel: StarViewModel,
+    userViewModel: UserViewModel,
+    onNavigate: (String) -> Unit
+) {
+    LaunchedEffect(Unit) {
+        Log.d("화면", "SnapScreen")
+    }
+    val snap = viewModel.snapState.collectAsState()
+    val connected = viewModel.connectedState.collectAsState().value
+    val relatedSnaps = viewModel.relatedSnapsState.collectAsState().value
+    val detailScrollState = rememberScrollState()
+    val myUsername = userViewModel.userData.collectAsState().value.username
+    val canEdit = myUsername.isNotBlank() && myUsername == snap.value.selectSnap?.createdUser?.username
+    var menuExpanded by remember { mutableStateOf(false) }
+    var deleteDialogOpen by remember { mutableStateOf(false) }
+    var deleteLoading by remember { mutableStateOf(false) }
+    var liked by remember(snap.value.selectSnap?.snapData?.snapId) {
+        mutableStateOf(snap.value.selectSnap?.snapData?.likeState ?: false)
+    }
+    var likeLoading by remember { mutableStateOf(false) }
+
+    var saved by remember(snap.value.selectSnap?.snapData?.snapId) {
+        mutableStateOf(snap.value.selectSnap?.snapData?.saveState ?: false)
+    }
+    var saveLoading by remember { mutableStateOf(false) }
+
+    val localComments = remember(snap.value.selectSnap?.snapData?.snapId) { mutableStateListOf<CommentDto>() }
+    var commentText by remember(snap.value.selectSnap?.snapData?.snapId) { mutableStateOf("") }
+    var commentSending by remember { mutableStateOf(false) }
+
+    LaunchedEffect(snap.value.selectSnap?.snapData?.likeState) {
+        liked = snap.value.selectSnap?.snapData?.likeState ?: false
+    }
+
+    LaunchedEffect(snap.value.selectSnap?.snapData?.snapId) {
+        val selectedSnap = snap.value.selectSnap
+        detailScrollState.scrollTo(0)
+        viewModel.resolveConnected(selectedSnap?.snapData?.tags ?: emptyList())
+        selectedSnap?.snapData?.snapId?.let(viewModel::loadRelatedSnaps)
+    }
+
+    if (deleteDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!deleteLoading) deleteDialogOpen = false },
+            containerColor = StarSnapColor.surface,
+            titleContentColor = StarSnapColor.text,
+            textContentColor = StarSnapColor.textSubtle,
+            title = { Text("스냅 삭제", style = StarSnapTypography.title) },
+            text = {
+                Text(
+                    "삭제한 스냅은 복구할 수 없어요.",
+                    style = StarSnapTypography.label
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !deleteLoading,
+                    onClick = {
+                        val snapId = snap.value.selectSnap?.snapData?.snapId ?: return@TextButton
+                        deleteLoading = true
+                        viewModel.deleteSnap(
+                            snapId = snapId,
+                            onSuccess = {
+                                deleteLoading = false
+                                deleteDialogOpen = false
+                                navController.popBackStack()
+                            },
+                            onFailure = {
+                                deleteLoading = false
+                            }
+                        )
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = StarSnapColor.danger)
+                ) { Text("삭제", style = StarSnapTypography.label) }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !deleteLoading,
+                    onClick = { deleteDialogOpen = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = StarSnapColor.textSubtle)
+                ) {
+                    Text("취소", style = StarSnapTypography.label)
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            TopAppBar(
+                title = stringResource(R.string.snap_top_app_bar_title),
+                onBack = { navController.popBackStack() },
+                actions = {
+                    if (canEdit) {
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(imageVector = Icons.Filled.MoreVert, contentDescription = "더보기")
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "삭제",
+                                            style = StarSnapTypography.label,
+                                            color = StarSnapColor.danger
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        deleteDialogOpen = true
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        },
+        containerColor = StarSnapColor.canvas,
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxWidth()
+                .verticalScroll(detailScrollState)
+        ) {
+            // User header (web: 상단 작성자 바 - 아바타 + 유저명 + 날짜)
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                SnapUser(
+                    profileImageUrl = snap.value.selectSnap?.createdUser?.imageKey,
+                    username = snap.value.selectSnap?.createdUser?.username ?: "",
+                    createAt = snap.value.selectSnap?.snapData?.createdAt ?: "",
+                    onClick = {
+                        val createdUser = snap.value.selectSnap?.createdUser ?: return@SnapUser
+                        val username = java.net.URLEncoder.encode(createdUser.username ?: "", "UTF-8")
+                        val imageKey = java.net.URLEncoder.encode(createdUser.imageKey ?: "", "UTF-8")
+                        onNavigate("user?username=$username&imageKey=$imageKey")
+                    }
+                )
+            }
+
+            // Snap Image
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            ) {
+                SnapImage(snap.value.selectSnap?.snapData?.imageKey)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                // Snap Icon(message, save, like)
+                SnapIcon(
+                    liked = liked,
+                    likeEnabled = !likeLoading,
+                    saved = saved,
+                    onSaveChange = {
+                        val snapId = snap.value.selectSnap?.snapData?.snapId ?: return@SnapIcon
+                        if (saveLoading) return@SnapIcon
+
+                        saveLoading = true
+                        val currentlySaved = saved
+
+                        viewModel.toggleSave(
+                            snapId = snapId,
+                            currentlySaved = currentlySaved,
+                            onSuccess = { nowSaved ->
+                                saved = nowSaved
+                                saveLoading = false
+                            },
+                            onFailure = {
+                                saved = currentlySaved
+                                saveLoading = false
+                            }
+                        )
+                    },
+                    onLikeChange = {
+                        val snapId = snap.value.selectSnap?.snapData?.snapId ?: return@SnapIcon
+                        if (likeLoading) return@SnapIcon
+
+                        likeLoading = true
+
+                        viewModel.toggleLike(
+                            snapId = snapId,
+                            onSuccess = { linked ->
+                                liked = linked
+                                likeLoading = false
+                            },
+                            onFailure = {
+                                liked = snap.value.selectSnap?.snapData?.likeState ?: liked
+                                likeLoading = false
+                            }
+                        )
+                    }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                SnapInformation(
+                    title = snap.value.selectSnap?.snapData?.title ?: "",
+                    tags = snap.value.selectSnap?.snapData?.tags ?: emptyList(),
+                    dateTaken = snap.value.selectSnap?.snapData?.dateTaken ?: "",
+                    source = snap.value.selectSnap?.snapData?.source ?: ""
+                )
+                if (connected.loading) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ConnectedEntitiesSkeleton(
+                        modifier = Modifier.loadingSemantics("연결된 스타와 스타그룹"),
+                    )
+                }
+                if (!connected.errorMessage.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    DataLoadErrorCard(
+                        title = "연결 정보를 불러오지 못했어요",
+                        description = connected.errorMessage,
+                        onRetry = {
+                            viewModel.resolveConnected(
+                                snap.value.selectSnap?.snapData?.tags.orEmpty(),
+                            )
+                        },
+                    )
+                }
+                if (!connected.loading && connected.starGroups.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SnapConnectedGroups(connected.starGroups)
+                }
+                if (!connected.loading && connected.stars.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SnapConnectedStars(connected.stars)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                SnapDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+                SnapMessages((snap.value.selectSnap?.snapData?.comments ?: emptyList()) + localComments)
+                Spacer(modifier = Modifier.height(12.dp))
+                SnapCommentInput(
+                    value = commentText,
+                    onValueChange = { commentText = it },
+                    sending = commentSending,
+                    onSend = {
+                        val snapId = snap.value.selectSnap?.snapData?.snapId ?: return@SnapCommentInput
+                        val text = commentText.trim()
+                        if (text.isEmpty() || commentSending) return@SnapCommentInput
+
+                        commentSending = true
+                        viewModel.createComment(
+                            snapId = snapId,
+                            content = text,
+                            onSuccess = { comment ->
+                                localComments.add(comment)
+                                commentText = ""
+                                commentSending = false
+                            },
+                            onFailure = {
+                                commentSending = false
+                            }
+                        )
+                    }
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                SnapDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+                RelatedSnapsSection(
+                    state = relatedSnaps,
+                    onRetry = {
+                        snap.value.selectSnap?.snapData?.snapId?.let(viewModel::loadRelatedSnaps)
+                    },
+                    onOpen = viewModel::selectSnap
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelatedSnapsSection(
+    state: RelatedSnapsState,
+    onRetry: () -> Unit,
+    onOpen: (SnapResponseDto) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            text = "비슷한 얼굴의 스냅",
+            style = StarSnapTypography.title,
+            color = StarSnapColor.text
+        )
+
+        when {
+            state.loading -> LazyRow(
+                modifier = Modifier.loadingSemantics("관련 스냅"),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(3) { RelatedSnapSkeletonCard() }
+            }
+
+            state.errorMessage != null -> Column {
+                Text(
+                    text = state.errorMessage,
+                    style = StarSnapTypography.label,
+                    color = StarSnapColor.textMuted
+                )
+                TextButton(onClick = onRetry) {
+                    Text("다시 시도", color = StarSnapColor.brandActive)
+                }
+            }
+
+            state.snaps.isEmpty() -> Text(
+                text = "같거나 비슷한 얼굴이 포함된 스냅이 아직 없어요.",
+                style = StarSnapTypography.label,
+                color = StarSnapColor.textMuted
+            )
+
+            else -> LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(
+                    items = state.snaps,
+                    key = { it.snapData.snapId }
+                ) { related ->
+                    RelatedSnap(
+                        snap = related,
+                        onClick = { onOpen(related) }
+                    )
+                }
+            }
+        }
+    }
+}
